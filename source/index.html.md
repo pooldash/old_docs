@@ -21,7 +21,24 @@ code_clipboard: true
 
 # Introduction
 
-Welcome to the Kittn API meow! You can use our API to access Kittn API endpoints, which can get information on various cats, kittens, and breeds in our database.
+Welcome to the Pooldash docs! If you see an opportunity to improve these docs, submit a pull request [on Github](https://github.com/pooldash/docs) or post in our [forum](https://forum.pooldash.com).
+
+Pooldash formulas are a way to codify your poolcare preferences in a way that can be automated through the Pooldash apps. Information about what readings to take, target-levels to set, and treatments to use can be used, inspected, and forked ("remixed") by pool maintainers everywhere. I hope this will prove to be more actionable than the current standard, which is some mix of blogs, forums, and spreadsheets.
+
+All formulas are open-sourced under the MIT license. In order to create your own formula, remix one of these [here](https://app.pooldash.com/formulas).
+
+There are 2 major sections:
+> Readings
+> Treatments
+
+Each treatment has a single javascript function that receives information about the pool, the readings, target levels, and previous treatments as parameters. This function must return how much of that treatment to use (in US ounces) based on that input. It must be a pure function (it can't rely any other inputs besides the parameters passed in).
+
+Here is some more info!
+
+is is useful a powerful tool for formula authors to use themselves, but more importantly, it's the most actionable way to spread pool-care advice. Pool maintainers around the world can simply load your formula in their Pooldash app without understanding every bit of it.
+
+
+Welcome to the pooldash API meow! You can use our API to access Kittn API endpoints, which can get information on various cats, kittens, and breeds in our database.
 
 We have language bindings in Shell, Ruby, Python, and JavaScript! You can view code examples in the dark area to the right, and you can switch the programming language of the examples with the tabs in the top right.
 
