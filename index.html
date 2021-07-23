@@ -346,20 +346,22 @@
       <div class="dark-box"></div>
       <div class="content">
         <h1 id='formulas'>Formulas</h1>
-<p>Pooldash &quot;formulas&quot; are a way to codify poolcare workflows so they can be used, inspected, and remixed by anybody.</p>
+<p>Pooldash &quot;formulas&quot; are a way to codify poolcare workflows so they can be used, inspected, and remixed by anybody. </p>
 
-<p>At its core, each formula defines an arbitrary list of readings and treatments. Each treatment defines its own function that will calculate whether the treatment is required, and (if necessary) how much of it. </p>
-
-<p>You can inspect formulas using the online editor <a href="https://app.pooldash.com/formula/vast_argument_756/edit#t-calc_hypo">here</a>. If you want to make your own, you&#39;ll need to create a free account and remix an existing formula. They&#39;re all MIT-licensed, so you can fork whichever one(s) you want.</p>
+<p>At its core, each formula defines an arbitrary list of readings and treatments (think &quot;inputs and outputs&quot;). Each treatment has a function that will calculate whether the treatment is required, and (if necessary) how much of it.</p>
 
 <p>Our <a href="https://apps.apple.com/us/app/pooldash-water-calculator/id1505607801#?platform=iphone">iOS</a> and <a href="https://play.google.com/store/apps/details?id=com.gazzini.pooldash&amp;hl=en_US&amp;gl=US">Android</a> apps provide a simple interface to execute these formulas. Most of our users don&#39;t really understand what formulas are, they just load them in the app and follow the instructions.</p>
 
+<p>You can inspect formulas using the online editor <a href="https://app.pooldash.com/formula/vast_argument_756/edit#t-calc_hypo">here</a>. If you want to make your own, you&#39;ll need to create a free account and remix an existing formula. They&#39;re all MIT-licensed, so you can fork whichever one(s) you want.</p>
+
 <p>Below is a reference for all the properties of a formula. If you have suggestions for improvement, please post it <a href="https://forum.pooldash.com">in the forum</a>. Similarly, if you think these docs could be improved, submit a pull-request <a href="https://github.com/pooldash/docs">on Github</a>.</p>
 <h2 id='readings'>Readings</h2>
-<p>Each reading will appear as a slider in the user&#39;s app, with the option to type into the text-field as well. View an example <a href="https://app.pooldash.com/formula/vast_argument_756/edit#r-fc">here</a>:</p>
+<p>Each reading will appear as a slider in the user&#39;s app, with the option to type into the text-field as well. View an example <a href="https://app.pooldash.com/formula/vast_argument_756/edit#r-fc">here</a>.</p>
 
 <p><img src="images/reading-429d2139.jpg" alt="a slider and a text-field that both represent a free chlorine reading" width="320" /></p>
-<div class="highlight"><pre class="highlight javascript tab-javascript"><code><span class="kd">const</span> <span class="nx">example</span> <span class="o">=</span> <span class="p">{</span>
+
+<p>These are exposed to treatment-functions on the <code>r</code> object.</p>
+<div class="highlight"><pre class="highlight javascript tab-javascript"><code><span class="kd">const</span> <span class="nx">exampleReading</span> <span class="o">=</span> <span class="p">{</span>
   <span class="na">display_name</span><span class="p">:</span> <span class="dl">"</span><span class="s2">Free Chlorine</span><span class="dl">"</span><span class="p">,</span>
   <span class="na">var</span><span class="p">:</span> <span class="dl">"</span><span class="s2">fc</span><span class="dl">"</span><span class="p">,</span>
   <span class="na">default_value</span><span class="p">:</span> <span class="mf">3.0</span><span class="p">,</span>
@@ -416,15 +418,91 @@
 <h2 id='target-levels'>Target Levels</h2>
 <p>Target levels expose some parameters of your formula to end-users so they can be tweaked without remixing an entirely new formula.</p>
 
-<p><img src="images/target_level-23c8940d.jpg" alt="2 cards, each with a chemical name for a title, with min &amp; max textfields" width="320" /></p>
+<p><img src="images/target_level-23c8940d.jpg" alt="2 cards, each with a chemical name for a title, with min &amp; max textfields" width="350" /></p>
 
-<p>Most commonly, these are target chemical levels (some people might want a slightly higher or lower pH).</p>
+<p>These are exposed to the treatment-functions via the <code>c</code> object.</p>
 
 <p>Target levels often have the same <code>var</code> as an associated reading, but this is not a requirement (for instance, there is no reading for combined-chlorine, as it&#39;s derived). Users area also welcome to set the min &amp; max values to the same number if no range is desired.</p>
 
 <p>Your formula specifies default values for each target, and you can even customize these defaults based on the pool&#39;s wall-type.</p>
+<div class="highlight"><pre class="highlight javascript tab-javascript"><code><span class="kd">const</span> <span class="nx">exampleTargetLevel</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">display_name</span><span class="p">:</span> <span class="dl">"</span><span class="s2">Calcium Hardness</span><span class="dl">"</span><span class="p">,</span>
+  <span class="na">var</span><span class="p">:</span> <span class="dl">"</span><span class="s2">ch</span><span class="dl">"</span><span class="p">,</span>
+  <span class="na">description</span><span class="p">:</span> <span class="dl">"</span><span class="s2">This will set the target range for calcium hardness levels and affect how Calcium Chloride is dosed.</span><span class="dl">"</span><span class="p">,</span>
+  <span class="na">min</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span>
+  <span class="na">max</span><span class="p">:</span> <span class="mi">400</span><span class="p">,</span>
+  <span class="na">overrides</span><span class="p">:</span> <span class="p">[</span>
+    <span class="na">wallType</span><span class="p">:</span> <span class="dl">'</span><span class="s1">plaster</span><span class="dl">'</span><span class="p">,</span>
+    <span class="na">min</span><span class="p">:</span> <span class="mi">250</span><span class="p">,</span>
+    <span class="na">max</span><span class="p">:</span> <span class="mi">450</span><span class="p">,</span>
+  <span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<table><thead>
+<tr>
+<th>Property</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>Display Name</td>
+<td>This is the name users will see when adjusting this value.</td>
+</tr>
+<tr>
+<td>Var Name</td>
+<td>The key on the <code>c</code> object that the treatment can use to access these values. For example, if the var was &quot;fc&quot;, the treatment-function could use <code>c.fc.min</code> or <code>c.fc.max</code></td>
+</tr>
+<tr>
+<td>Description</td>
+<td>(optional) This text will explain to the user what this parameter actually adjusts.</td>
+</tr>
+<tr>
+<td>Min</td>
+<td>The default minimum value for this target-range if no wall-type-specific default matches the given pool&#39;s wall-type.</td>
+</tr>
+<tr>
+<td>Min</td>
+<td>The default maximum value for this target-range if no wall-type-specific default matches the given pool&#39;s wall-type.</td>
+</tr>
+</tbody></table>
+
+<p>Additional min &amp; max overrides can be specified per wall-type. These can still be overridden by user edits on the client.</p>
 <h2 id='treatments'>Treatments</h2>
-<p>These are pure functions that must return the same number given the same inputs about the pool, readings, and target-levels as input parameters. They are written in the world&#39;s best programming language, which is (of course) javascript.</p>
+<p>Treatments are usually chemical additions, but can also be tasks (&quot;backwash the filter&quot;) or even calculations (like the LSI). Each treatment defines its own function that must return a single number.</p>
+
+<p><img src="images/treatment-753d299f.jpg" alt="An empty checkbox, next to the instructions to add 3.4 lbs of 67% calcium hypochlorite" width="320" /></p>
+
+<p>These are pure functions, meaning that they should always return the same result given the same inputs. The inputs include information about the pool, the readings, target levels, and also (as a convenience) the values returned by the previous treatments. In other words, you shouldn&#39;t try to read from external data-sources, check the time, or use any other dependencies besides the parameters.</p>
+
+<p>These functions are written in javascript, which is widely known as the world&#39;s best programming language.</p>
+
+<table><thead>
+<tr>
+<th>Property</th>
+<th>Description</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>Display Name</td>
+<td>This is the name users will see in the app (do not include concentration info here).</td>
+</tr>
+<tr>
+<td>Var Name</td>
+<td>The key on the <code>c</code> object that the treatment can use to access these values. For example, if the var was &quot;fc&quot;, the treatment-function could use <code>c.fc.min</code> or <code>c.fc.max</code></td>
+</tr>
+<tr>
+<td>Description</td>
+<td>(optional) This text will explain to the user what this parameter actually adjusts.</td>
+</tr>
+<tr>
+<td>Min</td>
+<td>The default minimum value for this target-range if no wall-type-specific default matches the given pool&#39;s wall-type.</td>
+</tr>
+<tr>
+<td>Min</td>
+<td>The default maximum value for this target-range if no wall-type-specific default matches the given pool&#39;s wall-type.</td>
+</tr>
+</tbody></table>
 
 <p>Not all treatments are chemical, and not all readings are numerical. I tried to make pooldash sufficiently general to account for this, but if you see opportunities for improvement, please post <a href="https://forum.pooldash.com">in the forum</a>. Similarly, if you think these docs could be improved, submit a pull-request <a href="https://github.com/pooldash/docs">on Github</a>.</p>
 
