@@ -12,25 +12,27 @@ code_clipboard: true
 
 # Formulas
 
-Pooldash "formulas" are a way to codify poolcare workflows so they can be used, inspected, and remixed by anybody.
+Pooldash "formulas" are a way to codify poolcare workflows so they can be used, inspected, and remixed by anybody. 
 
-At its core, each formula defines an arbitrary list of readings and treatments. Each treatment defines its own function that will calculate whether the treatment is required, and (if necessary) how much of it. 
-
-You can inspect formulas using the online editor [here](https://app.pooldash.com/formula/vast_argument_756/edit#t-calc_hypo). If you want to make your own, you'll need to create a free account and remix an existing formula. They're all MIT-licensed, so you can fork whichever one(s) you want.
+At its core, each formula defines an arbitrary list of readings and treatments (think "inputs and outputs"). Each treatment has a function that will calculate whether the treatment is required, and (if necessary) how much of it.
 
 Our [iOS](https://apps.apple.com/us/app/pooldash-water-calculator/id1505607801#?platform=iphone) and [Android](https://play.google.com/store/apps/details?id=com.gazzini.pooldash&hl=en_US&gl=US) apps provide a simple interface to execute these formulas. Most of our users don't really understand what formulas are, they just load them in the app and follow the instructions.
+
+You can inspect formulas using the online editor [here](https://app.pooldash.com/formula/vast_argument_756/edit#t-calc_hypo). If you want to make your own, you'll need to create a free account and remix an existing formula. They're all MIT-licensed, so you can fork whichever one(s) you want.
 
 Below is a reference for all the properties of a formula. If you have suggestions for improvement, please post it [in the forum](https://forum.pooldash.com). Similarly, if you think these docs could be improved, submit a pull-request [on Github](https://github.com/pooldash/docs).
 
 
 ## Readings
 
-Each reading will appear as a slider in the user's app, with the option to type into the text-field as well. View an example [here](https://app.pooldash.com/formula/vast_argument_756/edit#r-fc):
+Each reading will appear as a slider in the user's app, with the option to type into the text-field as well. View an example [here](https://app.pooldash.com/formula/vast_argument_756/edit#r-fc).
 
 <%= image_tag("images/reading.jpg", alt: "a slider and a text-field that both represent a free chlorine reading", width: 320) %>
 
+These are exposed to treatment-functions on the `r` object.
+
 ```javascript
-const example = {
+const exampleReading = {
   display_name: "Free Chlorine",
   var: "fc",
   default_value: 3.0,
@@ -45,8 +47,8 @@ const example = {
 | Property | Description |
 | -------- | ----------- ||
 | Display Name       | This is the name users will see above the slider & next to the text-field.                                                                                       |
-| Var Name           | This will the key used on the `r` object that functions use to read the value of this reading.                                                                   |
-| Default Value      | The first time a user takes this reading, this will be the initial value of the slider and text-field.                                                           |
+| Var Name           | This will be the key used on the `r` object that treatment-functions use to get the value of this reading.                                                                   |
+| Default Value      | The first time somebody uses this formula, this will be the initial value of the slider and text-field.                                                           |
 | Units              | Any string representing the units for this value (usually "ppm" or nothing)                                                                                      |
 | Slider Min         | The minimum range of the slider. Users can still use the text-field to enter a number outside this range.                                                        |
 | Slider Max         | The max range of the slider.                                                                                                                                     |
@@ -59,21 +61,57 @@ const example = {
 
 Target levels expose some parameters of your formula to end-users so they can be tweaked without remixing an entirely new formula.
 
-Most commonly, these are target chemical levels (some people might want a slightly higher or lower pH).
+<%= image_tag("images/target_level.jpg", alt: "2 cards, each with a chemical name for a title, with min & max textfields", width: 350) %>
 
-Target levels often have the same `var` as an associated reading, but this is not a requirement (for instance, there is no reading for combined-chlorine as it's derived). Users area also welcome to set the min & max values to the same number if no range is desired.
+These are exposed to the treatment-functions via the `c` object.
+
+Target levels often have the same `var` as an associated reading, but this is not a requirement (for instance, there is no reading for combined-chlorine, as it's derived). Users area also welcome to set the min & max values to the same number if no range is desired.
 
 Your formula specifies default values for each target, and you can even customize these defaults based on the pool's wall-type.
 
+```javascript
+const exampleTargetLevel = {
+  display_name: "Calcium Hardness",
+  var: "ch",
+  description: "This will set the target range for calcium hardness levels and affect how Calcium Chloride is dosed.",
+  min: 200,
+  max: 400,
+  overrides: [
+    wallType: 'plaster',
+    min: 250,
+    max: 450,
+  ]
+}
+```
 
+| Property | Description |
+| -------- | ----------- ||
+| Display Name | This is the name users will see when adjusting this value.|
+| Var Name     | The key on the `c` object that the treatment can use to access these values. For example, if the var was "fc", the treatment-function could use `c.fc.min` or `c.fc.max` |
+| Description  | (optional) This text will explain to the user what this parameter actually adjusts.|
+| Min | The default minimum value for this target-range if no wall-type-specific default matches the given pool's wall-type.
+| Min | The default maximum value for this target-range if no wall-type-specific default matches the given pool's wall-type.
+
+Additional min & max overrides can be specified per wall-type. These can still be overridden by user edits on the client.
 
 
 ## Treatments
 
+Treatments are usually chemical additions, but can also be tasks ("backwash the filter") or even calculations (like the LSI). Each treatment defines its own function that must return a single number.
 
+<%= image_tag("images/treatment.jpg", alt: "An empty checkbox, next to the instructions to add 3.4 lbs of 67% calcium hypochlorite", width: 320) %>
 
+These are pure functions, meaning that they should always return the same result given the same inputs. The inputs include information about the pool, the readings, target levels, and also (as a convenience) the values returned by the previous treatments. In other words, you shouldn't try to read from external data-sources, check the time, or use any other dependencies besides the parameters.
 
-These are pure functions that must return the same number given the same inputs about the pool, readings, and target-levels as input parameters. They are written in the world's best programming language, which is (of course) javascript.
+These functions are written in javascript, which is widely known as the world's best programming language.
+
+| Property | Description |
+| -------- | ----------- ||
+| Display Name | This is the name users will see in the app (do not include concentration info here).|
+| Var Name     | The key on the `c` object that the treatment can use to access these values. For example, if the var was "fc", the treatment-function could use `c.fc.min` or `c.fc.max` |
+| Description  | (optional) This text will explain to the user what this parameter actually adjusts.|
+| Min | The default minimum value for this target-range if no wall-type-specific default matches the given pool's wall-type.
+| Min | The default maximum value for this target-range if no wall-type-specific default matches the given pool's wall-type.
 
 
 
