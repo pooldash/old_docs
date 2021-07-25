@@ -306,16 +306,13 @@
         <ul class="search-results"></ul>
       <ul id="toc" class="toc-list-h1">
           <li>
-            <a href="#formulas" class="toc-h1 toc-link" data-title="Formulas">Formulas</a>
+            <a href="#pooldash-formulas" class="toc-h1 toc-link" data-title="Pooldash Formulas">Pooldash Formulas</a>
               <ul class="toc-list-h2">
                   <li>
-                    <a href="#readings" class="toc-h2 toc-link" data-title="Readings">Readings</a>
+                    <a href="#overview" class="toc-h2 toc-link" data-title="Overview">Overview</a>
                   </li>
                   <li>
-                    <a href="#target-levels" class="toc-h2 toc-link" data-title="Target Levels">Target Levels</a>
-                  </li>
-                  <li>
-                    <a href="#treatments" class="toc-h2 toc-link" data-title="Treatments">Treatments</a>
+                    <a href="#properties" class="toc-h2 toc-link" data-title="Properties">Properties</a>
                   </li>
               </ul>
           </li>
@@ -345,17 +342,29 @@
     <div class="page-wrapper">
       <div class="dark-box"></div>
       <div class="content">
-        <h1 id='formulas'>Formulas</h1>
-<p>Pooldash &quot;formulas&quot; are a way to codify poolcare workflows so they can be used, inspected, and remixed by anybody. </p>
+        <h1 id='pooldash-formulas'>Pooldash Formulas</h1><h2 id='overview'>Overview</h2><h3 id='what-is-a-formula'>What is a formula?</h3>
+<p>It&#39;s a way for pool-nerds to create their own dosing calculator that can be used, inspected, and remixed by anybody.</p>
 
-<p>At its core, each formula defines an arbitrary list of readings and treatments (think &quot;inputs and outputs&quot;). Each treatment has a function that will calculate whether the treatment is required, and (if necessary) how much of it.</p>
+<p>Most of our users don&#39;t really understand what a formula is; they just load one in the <a href="https://apps.apple.com/us/app/pooldash-water-calculator/id1505607801#?platform=iphone">iOS</a> or <a href="https://play.google.com/store/apps/details?id=com.gazzini.pooldash&amp;hl=en_US&amp;gl=US">Android</a> app and follow the instructions to balance their pool.</p>
+<h3 id='what-problem-does-this-solve'>What problem does this solve?</h3>
+<ul>
+<li><p><strong>Transparency</strong>: Most pool calculators don&#39;t reveal the code used to calculate chemical dosages. This makes it hard for the community to help improve the app. At Pooldash, we recognize that many of our users know more about pool-care than us, so we not only encourage them to <em>read</em> this code, but we let the community <em>write</em> it by creating a standard framework to remix one another&#39;s formulas, which are all open-source under the MIT license.</p></li>
+<li><p><strong>Flexibility</strong>: Most pool calculators reflect the opinions (or worse: financial incentives) of their creators. If you want to use different chemicals, target-ranges, or sanitization systems... you shouldn&#39;t have to start from scratch. Instead, you should remix a Pooldash formula.</p></li>
+<li><p><strong>Correctness</strong>: Most pool calculators have a 1-1 relationship between readings and treatments. This is easy to understand, but it breaks down quickly as special cases are implemented to account for side effects and chemical substitutions. Pooldash formulas approach this differently -- instead of looking at every reading and asking &quot;How do we balance this reading?&quot;, we instead look at every possible treatment and ask &quot;How much of this treatment should we use?&quot; Each treatment has a custom javascript function that must answer this question.</p></li>
+</ul>
+<h3 id='how-do-they-work'>How do they work?</h3>
+<p>Formulas have an arbitrary list of readings (Free Chlorine, pH, whatever) and a separate list of possible treatments (Calcium Hypochlorite, Sodium Bicarbonate, &quot;Backwash the filter&quot;, whatever). Each treatment has a custom function that must return a single number. They run like so:</p>
 
-<p>Our <a href="https://apps.apple.com/us/app/pooldash-water-calculator/id1505607801#?platform=iphone">iOS</a> and <a href="https://play.google.com/store/apps/details?id=com.gazzini.pooldash&amp;hl=en_US&amp;gl=US">Android</a> apps provide a simple interface to execute these formulas. Most of our users don&#39;t really understand what formulas are, they just load them in the app and follow the instructions.</p>
+<ol>
+<li>The user takes all readings specified by the formula</li>
+<li>The app iterates over the formula&#39;s treatments, executing the custom javascript function for each one</li>
+<li>The app displays all of the treatments whose function returned a non-0 value</li>
+</ol>
 
 <p>You can inspect formulas using the online editor <a href="https://app.pooldash.com/formula/vast_argument_756/edit#t-calc_hypo">here</a>. If you want to make your own, you&#39;ll need to create a free account and remix an existing formula. They&#39;re all MIT-licensed, so you can fork whichever one(s) you want.</p>
 
 <p>Below is a reference for all the properties of a formula. If you have suggestions for improvement, please post it <a href="https://forum.pooldash.com">in the forum</a>. Similarly, if you think these docs could be improved, submit a pull-request <a href="https://github.com/pooldash/docs">on Github</a>.</p>
-<h2 id='readings'>Readings</h2>
+<h2 id='properties'>Properties</h2><h3 id='readings'>Readings</h3>
 <p>Each reading will appear as a slider in the user&#39;s app, with the option to type into the text-field as well. View an example <a href="https://app.pooldash.com/formula/vast_argument_756/edit#r-fc">here</a>.</p>
 
 <p><img src="images/reading-429d2139.jpg" alt="a slider and a text-field that both represent a free chlorine reading" width="320" /></p>
@@ -415,7 +424,7 @@
 <td>Just leave this blank for now -- it will be used in the future to define relationships like the one between free &amp; total chlorine, but it&#39;s not quite there yet.</td>
 </tr>
 </tbody></table>
-<h2 id='target-levels'>Target Levels</h2>
+<h3 id='target-levels'>Target Levels</h3>
 <p>Target levels expose some parameters of your formula to end-users so they can be tweaked without remixing an entirely new formula.</p>
 
 <p><img src="images/target_level-23c8940d.jpg" alt="2 cards, each with a chemical name for a title, with min &amp; max textfields" width="350" /></p>
@@ -467,7 +476,7 @@
 </tbody></table>
 
 <p>Additional min &amp; max overrides can be specified per wall-type. These can still be overridden by user edits on the client.</p>
-<h2 id='treatments'>Treatments</h2>
+<h3 id='treatments'>Treatments</h3>
 <p>Treatments are usually chemical additions, but can also be tasks (&quot;backwash the filter&quot;) or even calculations (like the LSI). Each treatment defines its own function that must return a single number.</p>
 
 <p><img src="images/treatment-753d299f.jpg" alt="An empty checkbox, next to the instructions to add 3.4 lbs of 67% calcium hypochlorite" width="320" /></p>
