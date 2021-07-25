@@ -10,20 +10,40 @@ search: true
 code_clipboard: true
 ---
 
-# Formulas
+# Pooldash Formulas
 
-Pooldash "formulas" are a way to codify poolcare workflows so they can be used, inspected, and remixed by anybody. 
+## Overview
 
-At its core, each formula defines an arbitrary list of readings and treatments (think "inputs and outputs"). Each treatment has a function that will calculate whether the treatment is required, and (if necessary) how much of it.
+### What is a formula?
 
-Our [iOS](https://apps.apple.com/us/app/pooldash-water-calculator/id1505607801#?platform=iphone) and [Android](https://play.google.com/store/apps/details?id=com.gazzini.pooldash&hl=en_US&gl=US) apps provide a simple interface to execute these formulas. Most of our users don't really understand what formulas are, they just load them in the app and follow the instructions.
+It's a way for pool-nerds to create their own dosing calculator that can be used, inspected, and remixed by anybody.
+
+Most of our users don't really understand what a formula is; they just load one in the [iOS](https://apps.apple.com/us/app/pooldash-water-calculator/id1505607801#?platform=iphone) or [Android](https://play.google.com/store/apps/details?id=com.gazzini.pooldash&hl=en_US&gl=US) app and follow the instructions to balance their pool.
+
+### What problem does this solve?
+
+* **Transparency**: Most pool calculators don't reveal the code used to calculate chemical dosages. This makes it hard for the community to help improve the app. At Pooldash, we recognize that many of our users know more about pool-care than us, so we not only encourage them to _read_ this code, but we let the community _write_ it by creating a standard framework to remix one another's formulas, which are all open-source under the MIT license.
+
+* **Flexibility**: Most pool calculators reflect the opinions (or worse: financial incentives) of their creators. If you want to use different chemicals, target-ranges, or sanitization systems... you shouldn't have to start from scratch. Instead, you should remix a Pooldash formula.
+
+* **Correctness**: Most pool calculators have a 1-1 relationship between readings and treatments. This is easy to understand, but it breaks down quickly as special cases are implemented to account for side effects and chemical substitutions. Pooldash formulas approach this differently -- instead of looking at every reading and asking "How do we balance this reading?", we instead look at every possible treatment and ask "How much of this treatment should we use?" Each treatment has a custom javascript function that must answer this question.
+
+### How do they work?
+
+Formulas have an arbitrary list of readings (Free Chlorine, pH, whatever) and a separate list of possible treatments (Calcium Hypochlorite, Sodium Bicarbonate, "Backwash the filter", whatever). Each treatment has a custom function that must return a single number. They run like so:
+
+1. The user takes all readings specified by the formula
+2. The app iterates over the formula's treatments, executing the custom javascript function for each one
+3. The app displays all of the treatments whose function returned a non-0 value
+
 
 You can inspect formulas using the online editor [here](https://app.pooldash.com/formula/vast_argument_756/edit#t-calc_hypo). If you want to make your own, you'll need to create a free account and remix an existing formula. They're all MIT-licensed, so you can fork whichever one(s) you want.
 
 Below is a reference for all the properties of a formula. If you have suggestions for improvement, please post it [in the forum](https://forum.pooldash.com). Similarly, if you think these docs could be improved, submit a pull-request [on Github](https://github.com/pooldash/docs).
 
+## Properties
 
-## Readings
+### Readings
 
 Each reading will appear as a slider in the user's app, with the option to type into the text-field as well. View an example [here](https://app.pooldash.com/formula/vast_argument_756/edit#r-fc).
 
@@ -57,7 +77,7 @@ const exampleReading = {
 | Offset Reading Var | Just leave this blank for now -- it will be used in the future to define relationships like the one between free & total chlorine, but it's not quite there yet. |
 
 
-## Target Levels
+### Target Levels
 
 Target levels expose some parameters of your formula to end-users so they can be tweaked without remixing an entirely new formula.
 
@@ -95,7 +115,7 @@ const exampleTargetLevel = {
 Additional min & max overrides can be specified per wall-type. These can still be overridden by user edits on the client.
 
 
-## Treatments
+### Treatments
 
 Treatments are usually chemical additions, but can also be tasks ("backwash the filter") or even calculations (like the LSI). Each treatment defines its own function that must return a single number.
 
