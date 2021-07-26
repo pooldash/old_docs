@@ -10,23 +10,28 @@ search: true
 code_clipboard: true
 ---
 
-# Pooldash Formulas
+# Creating Formulas
 
 ## Overview
 
 ### What is a formula?
 
-It's a way for pool-nerds to create their own dosing calculator that can be used, inspected, and remixed by anybody.
+Think of it as a framework to codify your poolcare workflow so that it can be used, inspected, and remixed by anybody.
 
 Most of our users don't really understand what a formula is; they just load one in the [iOS](https://apps.apple.com/us/app/pooldash-water-calculator/id1505607801#?platform=iphone) or [Android](https://play.google.com/store/apps/details?id=com.gazzini.pooldash&hl=en_US&gl=US) app and follow the instructions to balance their pool.
+
+> Anyone can view & edit formulas using our [online editor](https://app.pooldash.com/formula/vast_argument_756/edit#t-calc_hypo).
+> <%= image_tag("images/editor.jpg", alt: "A screenshot of an IDE built into a web browser") %>
 
 ### What problem does this solve?
 
 * **Transparency**: Most pool calculators don't reveal the code used to calculate chemical dosages. This makes it hard for the community to help improve the app. At Pooldash, we recognize that many of our users know more about pool-care than us, so we not only encourage them to _read_ this code, but we let the community _write_ it by creating a standard framework to remix one another's formulas, which are all open-source under the MIT license.
 
-* **Flexibility**: Most pool calculators reflect the opinions (or worse: financial incentives) of their creators. If you want to use different chemicals, target-ranges, or sanitization systems... you shouldn't have to start from scratch. Instead, you should remix a Pooldash formula.
+* **Flexibility**: Most pool calculators reflect the opinions (or worse: financial incentives) of their creators. If you want to use different chemicals, target-ranges, or sanitization systems... you should be able to. With Pooldash, this is accomplished by selecting a new formula, or by remixing an existing one to suit your needs.
 
 * **Correctness**: Most pool calculators have a 1-1 relationship between readings and treatments. This is easy to understand, but it breaks down quickly as special cases are implemented to account for side effects and chemical substitutions. Pooldash formulas approach this differently -- instead of looking at every reading and asking "How do we balance this reading?", we instead look at every possible treatment and ask "How much of this treatment should we use?" Each treatment has a custom javascript function that must answer this question.
+
+Our goal is to allow for complex calculations, but to encapsulate the complexity in a way that's approachable to all programmers.
 
 ### How do they work?
 
@@ -36,7 +41,6 @@ Formulas have an arbitrary list of readings (Free Chlorine, pH, whatever) and a 
 2. The app iterates over the formula's treatments, executing the custom javascript function for each one
 3. The app displays all of the treatments whose function returned a non-0 value
 
-
 You can inspect formulas using the online editor [here](https://app.pooldash.com/formula/vast_argument_756/edit#t-calc_hypo). If you want to make your own, you'll need to create a free account and remix an existing formula. They're all MIT-licensed, so you can fork whichever one(s) you want.
 
 Below is a reference for all the properties of a formula. If you have suggestions for improvement, please post it [in the forum](https://forum.pooldash.com). Similarly, if you think these docs could be improved, submit a pull-request [on Github](https://github.com/pooldash/docs).
@@ -45,23 +49,27 @@ Below is a reference for all the properties of a formula. If you have suggestion
 
 ### Readings
 
-Each reading will appear as a slider in the user's app, with the option to type into the text-field as well. View an example [here](https://app.pooldash.com/formula/vast_argument_756/edit#r-fc).
+Each reading will appear as a slider in the user's app. Users can either use the slider to set the value, or they can type into a text-field instead. View an example [here](https://app.pooldash.com/formula/vast_argument_756/edit#r-fc).
+
+* The slider is limited by `Slider Min` and `Slider Max`, but users can enter any number into the text-field.
+* If a reading is skipped, the default value is supplied to treatment functions via the `r` object.
+  * You must explicitly inspect the `s` object to check if a reading was skipped.
+  * This reduces `undefined` exceptions and confusion related to `0` being falsey (and also a valid reading value).
 
 <%= image_tag("images/reading.jpg", alt: "a slider and a text-field that both represent a free chlorine reading", width: 320) %>
 
-These are exposed to treatment-functions on the `r` object.
+> Readings are exposed to treatment functions on the `r` object, keyed to the "Var Name" value. Assuming the reading pictured had "Var Name" set to "fc", then this will resolve to true:
 
 ```javascript
-const exampleReading = {
-  display_name: "Free Chlorine",
-  var: "fc",
-  default_value: 3.0,
-  units: "ppm",
-  sliderMin: 0,
-  sliderMax: 7,
-  decimalPlaces: 1,
-  is_default_on: true
-}
+const readingValue = r.fc;
+(readingValue === 1.4);         // true
+```
+
+> Skipped readings are unusual. `s.<var>` will resolve to true for all skipped readings, but the `r` object will still contain the reading's default value.
+
+```javascript
+const isReadingTaken = !!r.fc;    // wrong
+const isReadingTaken = !s.fc;     // correct
 ```
 
 | Property | Description |
@@ -83,26 +91,21 @@ Target levels expose some parameters of your formula to end-users so they can be
 
 <%= image_tag("images/target_level.jpg", alt: "2 cards, each with a chemical name for a title, with min & max textfields", width: 350) %>
 
-These are exposed to the treatment-functions via the `c` object.
+> These are exposed to the treatment-functions via the `c` object.
 
-Target levels often have the same `var` as an associated reading, but this is not a requirement (for instance, there is no reading for combined-chlorine, as it's derived). Users area also welcome to set the min & max values to the same number if no range is desired.
+```javascript
+// If the FC is below target levels, return 0:
+// Wrong:
+if (r.fc < 2.0) { return 0; }
+
+// Correct:
+if (r.fc < c.fc.max) { return 0; }
+```
+
+Target levels often have the same `var` as an associated reading, but this is not a requirement (for instance, there is no reading for combined-chlorine, as it's derived). Users are also welcome to set the min & max values to the same number if no range is desired.
 
 Your formula specifies default values for each target, and you can even customize these defaults based on the pool's wall-type.
 
-```javascript
-const exampleTargetLevel = {
-  display_name: "Calcium Hardness",
-  var: "ch",
-  description: "This will set the target range for calcium hardness levels and affect how Calcium Chloride is dosed.",
-  min: 200,
-  max: 400,
-  overrides: [
-    wallType: 'plaster',
-    min: 250,
-    max: 450,
-  ]
-}
-```
 
 | Property | Description |
 | -------- | ----------- ||
