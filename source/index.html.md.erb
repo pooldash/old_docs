@@ -14,24 +14,23 @@ code_clipboard: true
 
 ## Overview
 
-### What is a formula?
-
-Think of it as a framework to codify your poolcare workflow so that it can be used, inspected, and remixed by anybody.
+This is a framework to codify your poolcare workflow so that it can be used, inspected, and remixed by anybody.
 
 Most of our users don't really understand what a formula is; they just load one in the [iOS](https://apps.apple.com/us/app/pooldash-water-calculator/id1505607801#?platform=iphone) or [Android](https://play.google.com/store/apps/details?id=com.gazzini.pooldash&hl=en_US&gl=US) app and follow the instructions to balance their pool.
 
 > Anyone can view & edit formulas using our [online editor](https://app.pooldash.com/formula/vast_argument_756/edit#t-calc_hypo).
+> 
 > <%= image_tag("images/editor.jpg", alt: "A screenshot of an IDE built into a web browser") %>
 
 ### What problem does this solve?
 
-* **Transparency**: Most pool calculators don't reveal the code used to calculate chemical dosages. This makes it hard for the community to help improve the app. At Pooldash, we recognize that many of our users know more about pool-care than us, so we not only encourage them to _read_ this code, but we let the community _write_ it by creating a standard framework to remix one another's formulas, which are all open-source under the MIT license.
-
 * **Flexibility**: Most pool calculators reflect the opinions (or worse: financial incentives) of their creators. If you want to use different chemicals, target-ranges, or sanitization systems... you should be able to. With Pooldash, this is accomplished by selecting a new formula, or by remixing an existing one to suit your needs.
+
+* **Transparency**: Most pool calculators don't reveal the code used to calculate chemical dosages. This makes it hard for the community to help improve the app. At Pooldash, we recognize that many of our users know more about poolcare than us, so we not only encourage them to _read_ this code, but we let the community _write_ it by remixing one another's formulas, which are all open-source under the MIT license.
 
 * **Correctness**: Most pool calculators have a 1-1 relationship between readings and treatments. This is easy to understand, but it breaks down quickly as special cases are implemented to account for side effects and chemical substitutions. Pooldash formulas approach this differently -- instead of looking at every reading and asking "How do we balance this reading?", we instead look at every possible treatment and ask "How much of this treatment should we use?" Each treatment has a custom javascript function that must answer this question.
 
-Our goal is to allow for complex calculations, but to encapsulate the complexity in a way that's approachable to all programmers.
+We previously tried a different approach based on "ChemicalEffect" objects, but it was insufficient to model the nonlinear relationships and complex side-effects. Our current model of treatments-with-functions is closer to how poolcare operators actually think, and it encapsulates the complexity in a way that is approachable to programmers from various backgrounds.
 
 ### How do they work?
 
@@ -39,7 +38,7 @@ Formulas have an arbitrary list of readings (Free Chlorine, pH, whatever) and a 
 
 1. The user takes all readings specified by the formula
 2. The app iterates over the formula's treatments, executing the custom javascript function for each one
-3. The app displays all of the treatments whose function returned a non-0 value
+3. The app displays all of the treatments whose function returns a non-0 value
 
 You can inspect formulas using the online editor [here](https://app.pooldash.com/formula/vast_argument_756/edit#t-calc_hypo). If you want to make your own, you'll need to create a free account and remix an existing formula. They're all MIT-licensed, so you can fork whichever one(s) you want.
 
@@ -53,16 +52,16 @@ Each reading will appear as a slider in the user's app. Users can either use the
 
 * The slider is limited by `Slider Min` and `Slider Max`, but users can enter any number into the text-field.
 * If a reading is skipped, the default value is supplied to treatment functions via the `r` object.
-  * You must explicitly inspect the `s` object to check if a reading was skipped.
+  * You should check the `s` object to check if a reading was skipped.
   * This reduces `undefined` exceptions and confusion related to `0` being falsey (and also a valid reading value).
 
 <%= image_tag("images/reading.jpg", alt: "a slider and a text-field that both represent a free chlorine reading", width: 320) %>
 
-> Readings are exposed to treatment functions on the `r` object, keyed to the "Var Name" value. Assuming the reading pictured had "Var Name" set to "fc", then this will resolve to true:
+> To access the reading values in the treatment function, inspect the `r` object. Reading entries will be keyed to the "Var Name" value. Assuming the reading pictured had "Var Name" set to "fc", this will assign a value of 1.4:
 
 ```javascript
 const readingValue = r.fc;
-(readingValue === 1.4);         // true
+// readingValue is now the number 1.4
 ```
 
 > Skipped readings are unusual. `s.<var>` will resolve to true for all skipped readings, but the `r` object will still contain the reading's default value.
@@ -94,12 +93,13 @@ Target levels expose some parameters of your formula to end-users so they can be
 > These are exposed to the treatment-functions via the `c` object.
 
 ```javascript
-// If the FC is below target levels, return 0:
+// Your formula will be useful to more people if you expose more ranges for customization.
+
 // Wrong:
 if (r.fc < 2.0) { return 0; }
 
 // Correct:
-if (r.fc < c.fc.max) { return 0; }
+if (r.fc < c.fc.min) { return 0; }
 ```
 
 Target levels often have the same `var` as an associated reading, but this is not a requirement (for instance, there is no reading for combined-chlorine, as it's derived). Users are also welcome to set the min & max values to the same number if no range is desired.
@@ -124,263 +124,118 @@ Treatments are usually chemical additions, but can also be tasks ("backwash the 
 
 <%= image_tag("images/treatment.jpg", alt: "An empty checkbox, next to the instructions to add 3.4 lbs of 67% calcium hypochlorite", width: 320) %>
 
-These are pure functions, meaning that they should always return the same result given the same inputs. The inputs include information about the pool, the readings, target levels, and also (as a convenience) the values returned by the previous treatments. In other words, you shouldn't try to read from external data-sources, check the time, or use any other dependencies besides the parameters.
-
-These functions are written in javascript, which is widely known as the world's best programming language.
-
 | Property | Description |
 | -------- | ----------- ||
 | Display Name | This is the name users will see in the app (do not include concentration info here).|
 | Var Name     | The key on the `c` object that the treatment can use to access these values. For example, if the var was "fc", the treatment-function could use `c.fc.min` or `c.fc.max` |
-| Description  | (optional) This text will explain to the user what this parameter actually adjusts.|
-| Min | The default minimum value for this target-range if no wall-type-specific default matches the given pool's wall-type.
-| Min | The default maximum value for this target-range if no wall-type-specific default matches the given pool's wall-type.
+| Type  | This categorizes the treatment as a task, calculation, or chemical. This will affect how the treatment is displayed, what units are available, and how the function's return-value is interpreted. |
+| Concentration | For chemical treatments, this should be the active-ingredient concentration %, between 0 and 100. Users may select a different concentration when using the formula, and the app will linearly scale the dosage amount to accommodate it. The function should return the amount to use _at this concentration_. |
+| Function | This is a javascript function that must return how much (if any) of this treatment to use, based on context about the pool & readings.
 
+The functions are written in javascript, which is widely known as the world's best programming language :)
 
-
-Not all treatments are chemical, and not all readings are numerical. I tried to make pooldash sufficiently general to account for this, but if you see opportunities for improvement, please post [in the forum](https://forum.pooldash.com). Similarly, if you think these docs could be improved, submit a pull-request [on Github](https://github.com/pooldash/docs).
-
-Below we'll list all the properties of Readings, Treatments, and Target Levels. It's probably best to just look at an actual example (here) and use these docs as a sort-of reference.
-
-The most interesting part is the treatment functions -- each treatment (ex: Sodium Bicarbonate) has an associated javascript function.  This way, instead of writing several paragraphs of text explaining, filming a video, or building your own app just to let people use it... you can just share a link to your pooldash formula. Others can use, inspect, and even remix (fork) it for themselves.
-
-These can be used by you, but also by anyone else around the world. Because all formulas are MIT licensed, pool nerds all over the world can remix and build on each other's formulas.
-
- It's increasingly difficult to read blog posts and  The goal of pooldash was to create a system where you  Because there is so much interplay between different chemi
-
-
- in a way that can be automated through the Pooldash apps. Information about what readings to take, target-levels to set, and treatments to use can be used, inspected, and forked ("remixed") by pool maintainers everywhere. I hope this will prove to be more actionable than the current standard, which is some mix of blogs, forums, and spreadsheets.
-
-Welcome to the Pooldash docs! If you see an opportunity to improve these docs, submit a pull request [on Github](https://github.com/pooldash/docs) or post in our [forum](https://forum.pooldash.com).
-
-All formulas are open-sourced under the MIT license. In order to create your own formula, remix one of these [here](https://app.pooldash.com/formulas).
-
-There are 2 major sections:
-> Readings
-> Treatments
-
-Each treatment has a single javascript function that receives information about the pool, the readings, target levels, and previous treatments as parameters. This function must return how much of that treatment to use (in US ounces) based on that input. It must be a pure function (it can't rely any other inputs besides the parameters passed in).
-
-Here is some more info!
-
-is is useful a powerful tool for formula authors to use themselves, but more importantly, it's the most actionable way to spread pool-care advice. Pool maintainers around the world can simply load your formula in their Pooldash app without understanding every bit of it.
-
-
-Welcome to the pooldash API meow! You can use our API to access Kittn API endpoints, which can get information on various cats, kittens, and breeds in our database.
-
-We have language bindings in Shell, Ruby, Python, and JavaScript! You can view code examples in the dark area to the right, and you can switch the programming language of the examples with the tabs in the top right.
-
-This example API documentation page was created with [Slate](https://github.com/slatedocs/slate). Feel free to edit it and use it as a base for your own API's documentation.
-
-# Authentication
-
-> To authorize, use this code:
-
-```ruby
-require 'kittn'
-
-api = Kittn::APIClient.authorize!('meowmeowmeow')
-```
-
-```python
-import kittn
-
-api = kittn.authorize('meowmeowmeow')
-```
-
-```shell
-# With shell, you can just pass the correct header with each request
-curl "api_endpoint_here" \
-  -H "Authorization: meowmeowmeow"
-```
+### Treatment Functions
+> [Here](https://app.pooldash.com/formula/vast_argument_756/edit#t-cya) is very simple example of a treatment function to calculate the amount of Cyanuric Acid needed for this formula:
 
 ```javascript
-const kittn = require('kittn');
-
-let api = kittn.authorize('meowmeowmeow');
-```
-
-> Make sure to replace `meowmeowmeow` with your API key.
-
-Kittn uses API keys to allow access to the API. You can register a new Kittn API key at our [developer portal](http://example.com/developers).
-
-Kittn expects for the API key to be included in all API requests to the server in a header that looks like the following:
-
-`Authorization: meowmeowmeow`
-
-<aside class="notice">
-You must replace <code>meowmeowmeow</code> with your personal API key.
-</aside>
-
-# Kittens
-
-## Get All Kittens
-
-```ruby
-require 'kittn'
-
-api = Kittn::APIClient.authorize!('meowmeowmeow')
-api.kittens.get
-```
-
-```python
-import kittn
-
-api = kittn.authorize('meowmeowmeow')
-api.kittens.get()
-```
-
-```shell
-curl "http://example.com/api/kittens" \
-  -H "Authorization: meowmeowmeow"
-```
-
-```javascript
-const kittn = require('kittn');
-
-let api = kittn.authorize('meowmeowmeow');
-let kittens = api.kittens.get();
-```
-
-> The above command returns JSON structured like this:
-
-```json
-[
-  {
-    "id": 1,
-    "name": "Fluffums",
-    "breed": "calico",
-    "fluffiness": 6,
-    "cuteness": 7
-  },
-  {
-    "id": 2,
-    "name": "Max",
-    "breed": "unknown",
-    "fluffiness": 5,
-    "cuteness": 10
+function(p, r, t, c, s) {
+  if (r.cya >= c.cya.min) {
+    return 0;
   }
-]
-```
 
-This endpoint retrieves all kittens.
+  const target = (c.cya.min + c.cya.max) / 2.0;
+  const delta = target - r.cya;
+  const multiplier = .00013;
 
-### HTTP Request
-
-`GET http://example.com/api/kittens`
-
-### Query Parameters
-
-| Parameter    | Default | Description                                                                      |
-| ------------ | ------- | -------------------------------------------------------------------------------- |
-| include_cats | false   | If set to true, the result will also include cats.                               |
-| available    | true    | If set to false, the result will include kittens that have already been adopted. |
-
-<aside class="success">
-Remember — a happy kitten is an authenticated kitten!
-</aside>
-
-## Get a Specific Kitten
-
-```ruby
-require 'kittn'
-
-api = Kittn::APIClient.authorize!('meowmeowmeow')
-api.kittens.get(2)
-```
-
-```python
-import kittn
-
-api = kittn.authorize('meowmeowmeow')
-api.kittens.get(2)
-```
-
-```shell
-curl "http://example.com/api/kittens/2" \
-  -H "Authorization: meowmeowmeow"
-```
-
-```javascript
-const kittn = require('kittn');
-
-let api = kittn.authorize('meowmeowmeow');
-let max = api.kittens.get(2);
-```
-
-> The above command returns JSON structured like this:
-
-```json
-{
-  "id": 2,
-  "name": "Max",
-  "breed": "unknown",
-  "fluffiness": 5,
-  "cuteness": 10
+  return p.gallons * delta * multiplier;
 }
 ```
 
-This endpoint retrieves a specific kitten.
-
-<aside class="warning">Inside HTML code blocks like this one, you can't use Markdown, so use <code>&lt;code&gt;</code> blocks to denote code.</aside>
-
-### HTTP Request
-
-`GET http://example.com/kittens/<ID>`
-
-### URL Parameters
-
-| Parameter | Description                      |
-| --------- | -------------------------------- |
-| ID        | The ID of the kitten to retrieve |
-
-## Delete a Specific Kitten
-
-```ruby
-require 'kittn'
-
-api = Kittn::APIClient.authorize!('meowmeowmeow')
-api.kittens.delete(2)
-```
-
-```python
-import kittn
-
-api = kittn.authorize('meowmeowmeow')
-api.kittens.delete(2)
-```
-
-```shell
-curl "http://example.com/api/kittens/2" \
-  -X DELETE \
-  -H "Authorization: meowmeowmeow"
-```
+> [Here](https://app.pooldash.com/formula/vast_argument_756/edit#t-baking_soda) is more complex function from the same formula that doses Sodium Bicarbonate:
 
 ```javascript
-const kittn = require('kittn');
+function(p, r, t, c, s) {
+  // If the TA is already in good range, don't add any baking soda
+  if (r.ta >= c.ta.min) {
+    return 0;
+  }
 
-let api = kittn.authorize('meowmeowmeow');
-let max = api.kittens.delete(2);
-```
+  // Otherwise, shoot for the middle of the ideal range:
+  const target = (c.ta.min + c.ta.max) / 2.0;
+  let taDelta = target - r.ta;
 
-> The above command returns JSON structured like this:
+  // Remember, soda ash (from the previous step) also affects the TA,
+  // so we should calculate how much (if any) the soda ash has
+  // already moved the TA & offset our new delta accordingly:
+  const sodaAshMultiplierForTA = .00014;
+  const taIncreaseFromSodaAsh = t.soda_ash / (sodaAshMultiplierForTA * p.gallons);
 
-```json
-{
-  "id": 2,
-  "deleted" : ":("
+  if (taIncreaseFromSodaAsh >= taDelta) {
+    return 0;
+  }
+  taDelta = taDelta - taIncreaseFromSodaAsh;
+
+  // Now, calculate the amount of baking soda necessary to close the remaining gap.
+  const bakingSodaTAMultiplier = .000224;
+  return p.gallons * taDelta * bakingSodaTAMultiplier;
+
+  // NOTE: this ignores some complications. For instance, this new dose of
+  // baking soda will also raise the pH, and could knock it above the ideal range.
+  // If anyone wants to remix this recipe to account for this, you would be a hero.
 }
 ```
 
-This endpoint deletes a specific kitten.
+> Finally, [here](https://app.pooldash.com/formula/vast_argument_756/edit#t-lsi) is an example of a calculation-type treatment (for the LSI) that returns null if the necessary readings are skipped:
 
-### HTTP Request
+```javascript
+function(p, r, t, c, s) {
+  // We need these 4 readings + temperature to calculate this:
+  if (s.ch || s.ph || s.tds || s.ta || (s.temp_f && s.temp_c)) {
+    return null;
+  }
 
-`DELETE http://example.com/kittens/<ID>`
+  // Prefer the temp_f reading (if the user took both for some reason). But, either works:
+  const degrees_c = (s.temp_f) ? r.temp_c : ((r.temp_f - 32) / 1.8);
 
-### URL Parameters
+  const aa = (Math.log10(r.tds) - 1) / 10.0;
+  const bb = (-13.12 * Math.log10(degrees_c + 273)) + 34.55;
+  const cc = Math.log10(r.ch) - .4;
+  const dd = Math.log10(r.ta);
 
-| Parameter | Description                    |
-| --------- | ------------------------------ |
-| ID        | The ID of the kitten to delete |
+  return r.ph - 9.3 - aa - bb + cc + dd;
+}
+```
 
+These are pure functions, so they should always return the same result given the same inputs. You shouldn't try to read from external data-sources, check the time, or use any other dependencies besides the explicit parameters.
+
+The inputs include context about the pool & readings:
+
+| Parameter | Description |
+| --------- | ----------- ||
+| p | The pool object. It includes properties such as `gallons` (US Gallons), `liters`, and `wall_type`.
+| r | The readings object. It will have all of the formula readings, keyed by their "Var Name" property. |
+| t | The treatments object. It provides the results of all previous treatments, keyed by their "Var Name" property. This is included as a convenience. |
+| c | The customizable target ranges object. It contains a range object (with `min` and `max`) for each target range, keyed by the target range's "Var Name" property.
+| s | The skipped readings object. `s.<var>` will resolve to "true" for all skipped readings, and "false" for all readings the user took.
+
+
+As a convenience, all available inputs are listed for each function at the bottom of the formula editor:
+
+<%= image_tag("images/function_editor.jpg", alt: "An IDE with a textbox to edit a function on top, and seeral columns of text below, listing properties like 'r.tc: number'") %>
+
+The return-value of the function is interpreted differently based on the "Type" selected:
+
+| Type | Return-value |
+| ---- | ------------ ||
+| dryChemical | The number of US Ounces (by weight) of this chemical to use. If none is required, return 0. The user can convert this value to other units at runtime, including metric, imperial, US, and even custom scoops... but this function must return US ounces.
+| liquidChemical | Same as dryChemical, but the value should be US Ounces by volume.
+| task | Return 1 if the task should be completed, and 0 otherwise.
+| calculation | Return `null` if the calculation cannot be performed, otherwise return a number indicating the result. Remember that `0` is recorded as a valid result.
+
+
+## Considerations
+
+* If you remix a formula, post in the [forum](https://forum.pooldash.com) and tell us about it! It's more fun that way.
+* When choosing a "Var Name" for readings, treatments, and target levels, you can technically pick anything you want. However, there are advantages to following the same standards as everyone else. For example, the charts will track chemical history over time based on the "Var Name", so even if a user changes formulas, the chart will remain unified over time:
+
+<%= image_tag("images/charts.jpg", alt: "2 charts, one for Total Alkalinity and another for Sodium Bicarbonate, showing 3 months of history.", width: 350) %>
