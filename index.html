@@ -306,7 +306,7 @@
         <ul class="search-results"></ul>
       <ul id="toc" class="toc-list-h1">
           <li>
-            <a href="#pooldash-formulas" class="toc-h1 toc-link" data-title="Pooldash Formulas">Pooldash Formulas</a>
+            <a href="#creating-formulas" class="toc-h1 toc-link" data-title="Creating Formulas">Creating Formulas</a>
               <ul class="toc-list-h2">
                   <li>
                     <a href="#overview" class="toc-h2 toc-link" data-title="Overview">Overview</a>
@@ -342,16 +342,23 @@
     <div class="page-wrapper">
       <div class="dark-box"></div>
       <div class="content">
-        <h1 id='pooldash-formulas'>Pooldash Formulas</h1><h2 id='overview'>Overview</h2><h3 id='what-is-a-formula'>What is a formula?</h3>
-<p>It&#39;s a way for pool-nerds to create their own dosing calculator that can be used, inspected, and remixed by anybody.</p>
+        <h1 id='creating-formulas'>Creating Formulas</h1><h2 id='overview'>Overview</h2><h3 id='what-is-a-formula'>What is a formula?</h3>
+<p>Think of it as a framework to codify your poolcare workflow so that it can be used, inspected, and remixed by anybody.</p>
 
 <p>Most of our users don&#39;t really understand what a formula is; they just load one in the <a href="https://apps.apple.com/us/app/pooldash-water-calculator/id1505607801#?platform=iphone">iOS</a> or <a href="https://play.google.com/store/apps/details?id=com.gazzini.pooldash&amp;hl=en_US&amp;gl=US">Android</a> app and follow the instructions to balance their pool.</p>
+
+<blockquote>
+<p>Anyone can view &amp; edit formulas using our <a href="https://app.pooldash.com/formula/vast_argument_756/edit#t-calc_hypo">online editor</a>.
+<img src="images/editor-9fc7ff97.jpg" alt="A screenshot of an IDE built into a web browser" /></p>
+</blockquote>
 <h3 id='what-problem-does-this-solve'>What problem does this solve?</h3>
 <ul>
 <li><p><strong>Transparency</strong>: Most pool calculators don&#39;t reveal the code used to calculate chemical dosages. This makes it hard for the community to help improve the app. At Pooldash, we recognize that many of our users know more about pool-care than us, so we not only encourage them to <em>read</em> this code, but we let the community <em>write</em> it by creating a standard framework to remix one another&#39;s formulas, which are all open-source under the MIT license.</p></li>
-<li><p><strong>Flexibility</strong>: Most pool calculators reflect the opinions (or worse: financial incentives) of their creators. If you want to use different chemicals, target-ranges, or sanitization systems... you shouldn&#39;t have to start from scratch. Instead, you should remix a Pooldash formula.</p></li>
+<li><p><strong>Flexibility</strong>: Most pool calculators reflect the opinions (or worse: financial incentives) of their creators. If you want to use different chemicals, target-ranges, or sanitization systems... you should be able to. With Pooldash, this is accomplished by selecting a new formula, or by remixing an existing one to suit your needs.</p></li>
 <li><p><strong>Correctness</strong>: Most pool calculators have a 1-1 relationship between readings and treatments. This is easy to understand, but it breaks down quickly as special cases are implemented to account for side effects and chemical substitutions. Pooldash formulas approach this differently -- instead of looking at every reading and asking &quot;How do we balance this reading?&quot;, we instead look at every possible treatment and ask &quot;How much of this treatment should we use?&quot; Each treatment has a custom javascript function that must answer this question.</p></li>
 </ul>
+
+<p>Our goal is to allow for complex calculations, but to encapsulate the complexity in a way that&#39;s approachable to all programmers.</p>
 <h3 id='how-do-they-work'>How do they work?</h3>
 <p>Formulas have an arbitrary list of readings (Free Chlorine, pH, whatever) and a separate list of possible treatments (Calcium Hypochlorite, Sodium Bicarbonate, &quot;Backwash the filter&quot;, whatever). Each treatment has a custom function that must return a single number. They run like so:</p>
 
@@ -365,21 +372,31 @@
 
 <p>Below is a reference for all the properties of a formula. If you have suggestions for improvement, please post it <a href="https://forum.pooldash.com">in the forum</a>. Similarly, if you think these docs could be improved, submit a pull-request <a href="https://github.com/pooldash/docs">on Github</a>.</p>
 <h2 id='properties'>Properties</h2><h3 id='readings'>Readings</h3>
-<p>Each reading will appear as a slider in the user&#39;s app, with the option to type into the text-field as well. View an example <a href="https://app.pooldash.com/formula/vast_argument_756/edit#r-fc">here</a>.</p>
+<p>Each reading will appear as a slider in the user&#39;s app. Users can either use the slider to set the value, or they can type into a text-field instead. View an example <a href="https://app.pooldash.com/formula/vast_argument_756/edit#r-fc">here</a>.</p>
+
+<ul>
+<li>The slider is limited by <code>Slider Min</code> and <code>Slider Max</code>, but users can enter any number into the text-field.</li>
+<li>If a reading is skipped, the default value is supplied to treatment functions via the <code>r</code> object.
+
+<ul>
+<li>You must explicitly inspect the <code>s</code> object to check if a reading was skipped.</li>
+<li>This reduces <code>undefined</code> exceptions and confusion related to <code>0</code> being falsey (and also a valid reading value).</li>
+</ul></li>
+</ul>
 
 <p><img src="images/reading-429d2139.jpg" alt="a slider and a text-field that both represent a free chlorine reading" width="320" /></p>
 
-<p>These are exposed to treatment-functions on the <code>r</code> object.</p>
-<div class="highlight"><pre class="highlight javascript tab-javascript"><code><span class="kd">const</span> <span class="nx">exampleReading</span> <span class="o">=</span> <span class="p">{</span>
-  <span class="na">display_name</span><span class="p">:</span> <span class="dl">"</span><span class="s2">Free Chlorine</span><span class="dl">"</span><span class="p">,</span>
-  <span class="na">var</span><span class="p">:</span> <span class="dl">"</span><span class="s2">fc</span><span class="dl">"</span><span class="p">,</span>
-  <span class="na">default_value</span><span class="p">:</span> <span class="mf">3.0</span><span class="p">,</span>
-  <span class="na">units</span><span class="p">:</span> <span class="dl">"</span><span class="s2">ppm</span><span class="dl">"</span><span class="p">,</span>
-  <span class="na">sliderMin</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-  <span class="na">sliderMax</span><span class="p">:</span> <span class="mi">7</span><span class="p">,</span>
-  <span class="na">decimalPlaces</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-  <span class="na">is_default_on</span><span class="p">:</span> <span class="kc">true</span>
-<span class="p">}</span>
+<blockquote>
+<p>Readings are exposed to treatment functions on the <code>r</code> object, keyed to the &quot;Var Name&quot; value. Assuming the reading pictured had &quot;Var Name&quot; set to &quot;fc&quot;, then this will resolve to true:</p>
+</blockquote>
+<div class="highlight"><pre class="highlight javascript tab-javascript"><code><span class="kd">const</span> <span class="nx">readingValue</span> <span class="o">=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">fc</span><span class="p">;</span>
+<span class="p">(</span><span class="nx">readingValue</span> <span class="o">===</span> <span class="mf">1.4</span><span class="p">);</span>         <span class="c1">// true</span>
+</code></pre></div>
+<blockquote>
+<p>Skipped readings are unusual. <code>s.&lt;var&gt;</code> will resolve to true for all skipped readings, but the <code>r</code> object will still contain the reading&#39;s default value.</p>
+</blockquote>
+<div class="highlight"><pre class="highlight javascript tab-javascript"><code><span class="kd">const</span> <span class="nx">isReadingTaken</span> <span class="o">=</span> <span class="o">!!</span><span class="nx">r</span><span class="p">.</span><span class="nx">fc</span><span class="p">;</span>    <span class="c1">// wrong</span>
+<span class="kd">const</span> <span class="nx">isReadingTaken</span> <span class="o">=</span> <span class="o">!</span><span class="nx">s</span><span class="p">.</span><span class="nx">fc</span><span class="p">;</span>     <span class="c1">// correct</span>
 </code></pre></div>
 <table><thead>
 <tr>
@@ -429,24 +446,20 @@
 
 <p><img src="images/target_level-23c8940d.jpg" alt="2 cards, each with a chemical name for a title, with min &amp; max textfields" width="350" /></p>
 
+<blockquote>
 <p>These are exposed to the treatment-functions via the <code>c</code> object.</p>
+</blockquote>
+<div class="highlight"><pre class="highlight javascript tab-javascript"><code><span class="c1">// If the FC is below target levels, return 0:</span>
+<span class="c1">// Wrong:</span>
+<span class="k">if</span> <span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">fc</span> <span class="o">&lt;</span> <span class="mf">2.0</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="mi">0</span><span class="p">;</span> <span class="p">}</span>
 
-<p>Target levels often have the same <code>var</code> as an associated reading, but this is not a requirement (for instance, there is no reading for combined-chlorine, as it&#39;s derived). Users area also welcome to set the min &amp; max values to the same number if no range is desired.</p>
+<span class="c1">// Correct:</span>
+<span class="k">if</span> <span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">fc</span> <span class="o">&lt;</span> <span class="nx">c</span><span class="p">.</span><span class="nx">fc</span><span class="p">.</span><span class="nx">max</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="mi">0</span><span class="p">;</span> <span class="p">}</span>
+</code></pre></div>
+<p>Target levels often have the same <code>var</code> as an associated reading, but this is not a requirement (for instance, there is no reading for combined-chlorine, as it&#39;s derived). Users are also welcome to set the min &amp; max values to the same number if no range is desired.</p>
 
 <p>Your formula specifies default values for each target, and you can even customize these defaults based on the pool&#39;s wall-type.</p>
-<div class="highlight"><pre class="highlight javascript tab-javascript"><code><span class="kd">const</span> <span class="nx">exampleTargetLevel</span> <span class="o">=</span> <span class="p">{</span>
-  <span class="na">display_name</span><span class="p">:</span> <span class="dl">"</span><span class="s2">Calcium Hardness</span><span class="dl">"</span><span class="p">,</span>
-  <span class="na">var</span><span class="p">:</span> <span class="dl">"</span><span class="s2">ch</span><span class="dl">"</span><span class="p">,</span>
-  <span class="na">description</span><span class="p">:</span> <span class="dl">"</span><span class="s2">This will set the target range for calcium hardness levels and affect how Calcium Chloride is dosed.</span><span class="dl">"</span><span class="p">,</span>
-  <span class="na">min</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span>
-  <span class="na">max</span><span class="p">:</span> <span class="mi">400</span><span class="p">,</span>
-  <span class="na">overrides</span><span class="p">:</span> <span class="p">[</span>
-    <span class="na">wallType</span><span class="p">:</span> <span class="dl">'</span><span class="s1">plaster</span><span class="dl">'</span><span class="p">,</span>
-    <span class="na">min</span><span class="p">:</span> <span class="mi">250</span><span class="p">,</span>
-    <span class="na">max</span><span class="p">:</span> <span class="mi">450</span><span class="p">,</span>
-  <span class="p">]</span>
-<span class="p">}</span>
-</code></pre></div>
+
 <table><thead>
 <tr>
 <th>Property</th>
