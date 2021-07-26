@@ -314,22 +314,8 @@
                   <li>
                     <a href="#properties" class="toc-h2 toc-link" data-title="Properties">Properties</a>
                   </li>
-              </ul>
-          </li>
-          <li>
-            <a href="#authentication" class="toc-h1 toc-link" data-title="Authentication">Authentication</a>
-          </li>
-          <li>
-            <a href="#kittens" class="toc-h1 toc-link" data-title="Kittens">Kittens</a>
-              <ul class="toc-list-h2">
                   <li>
-                    <a href="#get-all-kittens" class="toc-h2 toc-link" data-title="Get All Kittens">Get All Kittens</a>
-                  </li>
-                  <li>
-                    <a href="#get-a-specific-kitten" class="toc-h2 toc-link" data-title="Get a Specific Kitten">Get a Specific Kitten</a>
-                  </li>
-                  <li>
-                    <a href="#delete-a-specific-kitten" class="toc-h2 toc-link" data-title="Delete a Specific Kitten">Delete a Specific Kitten</a>
+                    <a href="#considerations" class="toc-h2 toc-link" data-title="Considerations">Considerations</a>
                   </li>
               </ul>
           </li>
@@ -342,30 +328,31 @@
     <div class="page-wrapper">
       <div class="dark-box"></div>
       <div class="content">
-        <h1 id='creating-formulas'>Creating Formulas</h1><h2 id='overview'>Overview</h2><h3 id='what-is-a-formula'>What is a formula?</h3>
-<p>Think of it as a framework to codify your poolcare workflow so that it can be used, inspected, and remixed by anybody.</p>
+        <h1 id='creating-formulas'>Creating Formulas</h1><h2 id='overview'>Overview</h2>
+<p>This is a framework to codify your poolcare workflow so that it can be used, inspected, and remixed by anybody.</p>
 
 <p>Most of our users don&#39;t really understand what a formula is; they just load one in the <a href="https://apps.apple.com/us/app/pooldash-water-calculator/id1505607801#?platform=iphone">iOS</a> or <a href="https://play.google.com/store/apps/details?id=com.gazzini.pooldash&amp;hl=en_US&amp;gl=US">Android</a> app and follow the instructions to balance their pool.</p>
 
 <blockquote>
-<p>Anyone can view &amp; edit formulas using our <a href="https://app.pooldash.com/formula/vast_argument_756/edit#t-calc_hypo">online editor</a>.
-<img src="images/editor-9fc7ff97.jpg" alt="A screenshot of an IDE built into a web browser" /></p>
+<p>Anyone can view &amp; edit formulas using our <a href="https://app.pooldash.com/formula/vast_argument_756/edit#t-calc_hypo">online editor</a>.</p>
+
+<p><img src="images/editor-9fc7ff97.jpg" alt="A screenshot of an IDE built into a web browser" /></p>
 </blockquote>
 <h3 id='what-problem-does-this-solve'>What problem does this solve?</h3>
 <ul>
-<li><p><strong>Transparency</strong>: Most pool calculators don&#39;t reveal the code used to calculate chemical dosages. This makes it hard for the community to help improve the app. At Pooldash, we recognize that many of our users know more about pool-care than us, so we not only encourage them to <em>read</em> this code, but we let the community <em>write</em> it by creating a standard framework to remix one another&#39;s formulas, which are all open-source under the MIT license.</p></li>
 <li><p><strong>Flexibility</strong>: Most pool calculators reflect the opinions (or worse: financial incentives) of their creators. If you want to use different chemicals, target-ranges, or sanitization systems... you should be able to. With Pooldash, this is accomplished by selecting a new formula, or by remixing an existing one to suit your needs.</p></li>
+<li><p><strong>Transparency</strong>: Most pool calculators don&#39;t reveal the code used to calculate chemical dosages. This makes it hard for the community to help improve the app. At Pooldash, we recognize that many of our users know more about poolcare than us, so we not only encourage them to <em>read</em> this code, but we let the community <em>write</em> it by remixing one another&#39;s formulas, which are all open-source under the MIT license.</p></li>
 <li><p><strong>Correctness</strong>: Most pool calculators have a 1-1 relationship between readings and treatments. This is easy to understand, but it breaks down quickly as special cases are implemented to account for side effects and chemical substitutions. Pooldash formulas approach this differently -- instead of looking at every reading and asking &quot;How do we balance this reading?&quot;, we instead look at every possible treatment and ask &quot;How much of this treatment should we use?&quot; Each treatment has a custom javascript function that must answer this question.</p></li>
 </ul>
 
-<p>Our goal is to allow for complex calculations, but to encapsulate the complexity in a way that&#39;s approachable to all programmers.</p>
+<p>We previously tried a different approach based on &quot;ChemicalEffect&quot; objects, but it was insufficient to model the nonlinear relationships and complex side-effects. Our current model of treatments-with-functions is closer to how poolcare operators actually think, and it encapsulates the complexity in a way that is approachable to programmers from various backgrounds.</p>
 <h3 id='how-do-they-work'>How do they work?</h3>
 <p>Formulas have an arbitrary list of readings (Free Chlorine, pH, whatever) and a separate list of possible treatments (Calcium Hypochlorite, Sodium Bicarbonate, &quot;Backwash the filter&quot;, whatever). Each treatment has a custom function that must return a single number. They run like so:</p>
 
 <ol>
 <li>The user takes all readings specified by the formula</li>
 <li>The app iterates over the formula&#39;s treatments, executing the custom javascript function for each one</li>
-<li>The app displays all of the treatments whose function returned a non-0 value</li>
+<li>The app displays all of the treatments whose function returns a non-0 value</li>
 </ol>
 
 <p>You can inspect formulas using the online editor <a href="https://app.pooldash.com/formula/vast_argument_756/edit#t-calc_hypo">here</a>. If you want to make your own, you&#39;ll need to create a free account and remix an existing formula. They&#39;re all MIT-licensed, so you can fork whichever one(s) you want.</p>
@@ -379,7 +366,7 @@
 <li>If a reading is skipped, the default value is supplied to treatment functions via the <code>r</code> object.
 
 <ul>
-<li>You must explicitly inspect the <code>s</code> object to check if a reading was skipped.</li>
+<li>You should check the <code>s</code> object to check if a reading was skipped.</li>
 <li>This reduces <code>undefined</code> exceptions and confusion related to <code>0</code> being falsey (and also a valid reading value).</li>
 </ul></li>
 </ul>
@@ -387,10 +374,10 @@
 <p><img src="images/reading-429d2139.jpg" alt="a slider and a text-field that both represent a free chlorine reading" width="320" /></p>
 
 <blockquote>
-<p>Readings are exposed to treatment functions on the <code>r</code> object, keyed to the &quot;Var Name&quot; value. Assuming the reading pictured had &quot;Var Name&quot; set to &quot;fc&quot;, then this will resolve to true:</p>
+<p>To access the reading values in the treatment function, inspect the <code>r</code> object. Reading entries will be keyed to the &quot;Var Name&quot; value. Assuming the reading pictured had &quot;Var Name&quot; set to &quot;fc&quot;, this will assign a value of 1.4:</p>
 </blockquote>
 <div class="highlight"><pre class="highlight javascript tab-javascript"><code><span class="kd">const</span> <span class="nx">readingValue</span> <span class="o">=</span> <span class="nx">r</span><span class="p">.</span><span class="nx">fc</span><span class="p">;</span>
-<span class="p">(</span><span class="nx">readingValue</span> <span class="o">===</span> <span class="mf">1.4</span><span class="p">);</span>         <span class="c1">// true</span>
+<span class="c1">// readingValue is now the number 1.4</span>
 </code></pre></div>
 <blockquote>
 <p>Skipped readings are unusual. <code>s.&lt;var&gt;</code> will resolve to true for all skipped readings, but the <code>r</code> object will still contain the reading&#39;s default value.</p>
@@ -444,17 +431,18 @@
 <h3 id='target-levels'>Target Levels</h3>
 <p>Target levels expose some parameters of your formula to end-users so they can be tweaked without remixing an entirely new formula.</p>
 
-<p><img src="images/target_level-23c8940d.jpg" alt="2 cards, each with a chemical name for a title, with min &amp; max textfields" width="350" /></p>
+<p><img src="images/target_level-1528572c.jpg" alt="2 cards, each with a chemical name for a title, with min &amp; max textfields" width="350" /></p>
 
 <blockquote>
 <p>These are exposed to the treatment-functions via the <code>c</code> object.</p>
 </blockquote>
-<div class="highlight"><pre class="highlight javascript tab-javascript"><code><span class="c1">// If the FC is below target levels, return 0:</span>
+<div class="highlight"><pre class="highlight javascript tab-javascript"><code><span class="c1">// Your formula will be useful to more people if you expose more ranges for customization.</span>
+
 <span class="c1">// Wrong:</span>
 <span class="k">if</span> <span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">fc</span> <span class="o">&lt;</span> <span class="mf">2.0</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="mi">0</span><span class="p">;</span> <span class="p">}</span>
 
 <span class="c1">// Correct:</span>
-<span class="k">if</span> <span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">fc</span> <span class="o">&lt;</span> <span class="nx">c</span><span class="p">.</span><span class="nx">fc</span><span class="p">.</span><span class="nx">max</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="mi">0</span><span class="p">;</span> <span class="p">}</span>
+<span class="k">if</span> <span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">fc</span> <span class="o">&lt;</span> <span class="nx">c</span><span class="p">.</span><span class="nx">fc</span><span class="p">.</span><span class="nx">min</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="mi">0</span><span class="p">;</span> <span class="p">}</span>
 </code></pre></div>
 <p>Target levels often have the same <code>var</code> as an associated reading, but this is not a requirement (for instance, there is no reading for combined-chlorine, as it&#39;s derived). Users are also welcome to set the min &amp; max values to the same number if no range is desired.</p>
 
@@ -494,10 +482,6 @@
 
 <p><img src="images/treatment-753d299f.jpg" alt="An empty checkbox, next to the instructions to add 3.4 lbs of 67% calcium hypochlorite" width="320" /></p>
 
-<p>These are pure functions, meaning that they should always return the same result given the same inputs. The inputs include information about the pool, the readings, target levels, and also (as a convenience) the values returned by the previous treatments. In other words, you shouldn&#39;t try to read from external data-sources, check the time, or use any other dependencies besides the parameters.</p>
-
-<p>These functions are written in javascript, which is widely known as the world&#39;s best programming language.</p>
-
 <table><thead>
 <tr>
 <th>Property</th>
@@ -513,176 +497,93 @@
 <td>The key on the <code>c</code> object that the treatment can use to access these values. For example, if the var was &quot;fc&quot;, the treatment-function could use <code>c.fc.min</code> or <code>c.fc.max</code></td>
 </tr>
 <tr>
-<td>Description</td>
-<td>(optional) This text will explain to the user what this parameter actually adjusts.</td>
+<td>Type</td>
+<td>This categorizes the treatment as a task, calculation, or chemical. This will affect how the treatment is displayed, what units are available, and how the function&#39;s return-value is interpreted.</td>
 </tr>
 <tr>
-<td>Min</td>
-<td>The default minimum value for this target-range if no wall-type-specific default matches the given pool&#39;s wall-type.</td>
+<td>Concentration</td>
+<td>For chemical treatments, this should be the active-ingredient concentration %, between 0 and 100. Users may select a different concentration when using the formula, and the app will linearly scale the dosage amount to accommodate it. The function should return the amount to use <em>at this concentration</em>.</td>
 </tr>
 <tr>
-<td>Min</td>
-<td>The default maximum value for this target-range if no wall-type-specific default matches the given pool&#39;s wall-type.</td>
+<td>Function</td>
+<td>This is a javascript function that must return how much (if any) of this treatment to use, based on context about the pool &amp; readings.</td>
 </tr>
 </tbody></table>
 
-<p>Not all treatments are chemical, and not all readings are numerical. I tried to make pooldash sufficiently general to account for this, but if you see opportunities for improvement, please post <a href="https://forum.pooldash.com">in the forum</a>. Similarly, if you think these docs could be improved, submit a pull-request <a href="https://github.com/pooldash/docs">on Github</a>.</p>
-
-<p>Below we&#39;ll list all the properties of Readings, Treatments, and Target Levels. It&#39;s probably best to just look at an actual example (here) and use these docs as a sort-of reference.</p>
-
-<p>The most interesting part is the treatment functions -- each treatment (ex: Sodium Bicarbonate) has an associated javascript function.  This way, instead of writing several paragraphs of text explaining, filming a video, or building your own app just to let people use it... you can just share a link to your pooldash formula. Others can use, inspect, and even remix (fork) it for themselves.</p>
-
-<p>These can be used by you, but also by anyone else around the world. Because all formulas are MIT licensed, pool nerds all over the world can remix and build on each other&#39;s formulas.</p>
-
-<p>It&#39;s increasingly difficult to read blog posts and  The goal of pooldash was to create a system where you  Because there is so much interplay between different chemi</p>
-
-<p>in a way that can be automated through the Pooldash apps. Information about what readings to take, target-levels to set, and treatments to use can be used, inspected, and forked (&quot;remixed&quot;) by pool maintainers everywhere. I hope this will prove to be more actionable than the current standard, which is some mix of blogs, forums, and spreadsheets.</p>
-
-<p>Welcome to the Pooldash docs! If you see an opportunity to improve these docs, submit a pull request <a href="https://github.com/pooldash/docs">on Github</a> or post in our <a href="https://forum.pooldash.com">forum</a>.</p>
-
-<p>All formulas are open-sourced under the MIT license. In order to create your own formula, remix one of these <a href="https://app.pooldash.com/formulas">here</a>.</p>
-
-<p>There are 2 major sections:</p>
-
+<p>The functions are written in javascript, which is widely known as the world&#39;s best programming language :)</p>
+<h3 id='treatment-functions'>Treatment Functions</h3>
 <blockquote>
-<p>Readings
-Treatments</p>
+<p><a href="https://app.pooldash.com/formula/vast_argument_756/edit#t-cya">Here</a> is very simple example of a treatment function to calculate the amount of Cyanuric Acid needed for this formula:</p>
 </blockquote>
+<div class="highlight"><pre class="highlight javascript tab-javascript"><code><span class="kd">function</span><span class="p">(</span><span class="nx">p</span><span class="p">,</span> <span class="nx">r</span><span class="p">,</span> <span class="nx">t</span><span class="p">,</span> <span class="nx">c</span><span class="p">,</span> <span class="nx">s</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">cya</span> <span class="o">&gt;=</span> <span class="nx">c</span><span class="p">.</span><span class="nx">cya</span><span class="p">.</span><span class="nx">min</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="p">}</span>
 
-<p>Each treatment has a single javascript function that receives information about the pool, the readings, target levels, and previous treatments as parameters. This function must return how much of that treatment to use (in US ounces) based on that input. It must be a pure function (it can&#39;t rely any other inputs besides the parameters passed in).</p>
+  <span class="kd">const</span> <span class="nx">target</span> <span class="o">=</span> <span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">cya</span><span class="p">.</span><span class="nx">min</span> <span class="o">+</span> <span class="nx">c</span><span class="p">.</span><span class="nx">cya</span><span class="p">.</span><span class="nx">max</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">;</span>
+  <span class="kd">const</span> <span class="nx">delta</span> <span class="o">=</span> <span class="nx">target</span> <span class="o">-</span> <span class="nx">r</span><span class="p">.</span><span class="nx">cya</span><span class="p">;</span>
+  <span class="kd">const</span> <span class="nx">multiplier</span> <span class="o">=</span> <span class="p">.</span><span class="mi">00013</span><span class="p">;</span>
 
-<p>Here is some more info!</p>
-
-<p>is is useful a powerful tool for formula authors to use themselves, but more importantly, it&#39;s the most actionable way to spread pool-care advice. Pool maintainers around the world can simply load your formula in their Pooldash app without understanding every bit of it.</p>
-
-<p>Welcome to the pooldash API meow! You can use our API to access Kittn API endpoints, which can get information on various cats, kittens, and breeds in our database.</p>
-
-<p>We have language bindings in Shell, Ruby, Python, and JavaScript! You can view code examples in the dark area to the right, and you can switch the programming language of the examples with the tabs in the top right.</p>
-
-<p>This example API documentation page was created with <a href="https://github.com/slatedocs/slate">Slate</a>. Feel free to edit it and use it as a base for your own API&#39;s documentation.</p>
-<h1 id='authentication'>Authentication</h1>
-<blockquote>
-<p>To authorize, use this code:</p>
-</blockquote>
-<div class="highlight"><pre class="highlight ruby tab-ruby"><code><span class="nb">require</span> <span class="s1">'kittn'</span>
-
-<span class="n">api</span> <span class="o">=</span> <span class="no">Kittn</span><span class="o">::</span><span class="no">APIClient</span><span class="p">.</span><span class="nf">authorize!</span><span class="p">(</span><span class="s1">'meowmeowmeow'</span><span class="p">)</span>
-</code></pre></div><div class="highlight"><pre class="highlight python tab-python"><code><span class="kn">import</span> <span class="nn">kittn</span>
-
-<span class="n">api</span> <span class="o">=</span> <span class="n">kittn</span><span class="p">.</span><span class="n">authorize</span><span class="p">(</span><span class="s">'meowmeowmeow'</span><span class="p">)</span>
-</code></pre></div><div class="highlight"><pre class="highlight shell tab-shell"><code><span class="c"># With shell, you can just pass the correct header with each request</span>
-curl <span class="s2">"api_endpoint_here"</span> <span class="se">\</span>
-  <span class="nt">-H</span> <span class="s2">"Authorization: meowmeowmeow"</span>
-</code></pre></div><div class="highlight"><pre class="highlight javascript tab-javascript"><code><span class="kd">const</span> <span class="nx">kittn</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">kittn</span><span class="dl">'</span><span class="p">);</span>
-
-<span class="kd">let</span> <span class="nx">api</span> <span class="o">=</span> <span class="nx">kittn</span><span class="p">.</span><span class="nx">authorize</span><span class="p">(</span><span class="dl">'</span><span class="s1">meowmeowmeow</span><span class="dl">'</span><span class="p">);</span>
+  <span class="k">return</span> <span class="nx">p</span><span class="p">.</span><span class="nx">gallons</span> <span class="o">*</span> <span class="nx">delta</span> <span class="o">*</span> <span class="nx">multiplier</span><span class="p">;</span>
+<span class="p">}</span>
 </code></pre></div>
 <blockquote>
-<p>Make sure to replace <code>meowmeowmeow</code> with your API key.</p>
+<p><a href="https://app.pooldash.com/formula/vast_argument_756/edit#t-baking_soda">Here</a> is more complex function from the same formula that doses Sodium Bicarbonate:</p>
 </blockquote>
+<div class="highlight"><pre class="highlight javascript tab-javascript"><code><span class="kd">function</span><span class="p">(</span><span class="nx">p</span><span class="p">,</span> <span class="nx">r</span><span class="p">,</span> <span class="nx">t</span><span class="p">,</span> <span class="nx">c</span><span class="p">,</span> <span class="nx">s</span><span class="p">)</span> <span class="p">{</span>
+  <span class="c1">// If the TA is already in good range, don't add any baking soda</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">ta</span> <span class="o">&gt;=</span> <span class="nx">c</span><span class="p">.</span><span class="nx">ta</span><span class="p">.</span><span class="nx">min</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="p">}</span>
 
-<p>Kittn uses API keys to allow access to the API. You can register a new Kittn API key at our <a href="http://example.com/developers">developer portal</a>.</p>
+  <span class="c1">// Otherwise, shoot for the middle of the ideal range:</span>
+  <span class="kd">const</span> <span class="nx">target</span> <span class="o">=</span> <span class="p">(</span><span class="nx">c</span><span class="p">.</span><span class="nx">ta</span><span class="p">.</span><span class="nx">min</span> <span class="o">+</span> <span class="nx">c</span><span class="p">.</span><span class="nx">ta</span><span class="p">.</span><span class="nx">max</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">;</span>
+  <span class="kd">let</span> <span class="nx">taDelta</span> <span class="o">=</span> <span class="nx">target</span> <span class="o">-</span> <span class="nx">r</span><span class="p">.</span><span class="nx">ta</span><span class="p">;</span>
 
-<p>Kittn expects for the API key to be included in all API requests to the server in a header that looks like the following:</p>
+  <span class="c1">// Remember, soda ash (from the previous step) also affects the TA,</span>
+  <span class="c1">// so we should calculate how much (if any) the soda ash has</span>
+  <span class="c1">// already moved the TA &amp; offset our new delta accordingly:</span>
+  <span class="kd">const</span> <span class="nx">sodaAshMultiplierForTA</span> <span class="o">=</span> <span class="p">.</span><span class="mi">00014</span><span class="p">;</span>
+  <span class="kd">const</span> <span class="nx">taIncreaseFromSodaAsh</span> <span class="o">=</span> <span class="nx">t</span><span class="p">.</span><span class="nx">soda_ash</span> <span class="o">/</span> <span class="p">(</span><span class="nx">sodaAshMultiplierForTA</span> <span class="o">*</span> <span class="nx">p</span><span class="p">.</span><span class="nx">gallons</span><span class="p">);</span>
 
-<p><code>Authorization: meowmeowmeow</code></p>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">taIncreaseFromSodaAsh</span> <span class="o">&gt;=</span> <span class="nx">taDelta</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="nx">taDelta</span> <span class="o">=</span> <span class="nx">taDelta</span> <span class="o">-</span> <span class="nx">taIncreaseFromSodaAsh</span><span class="p">;</span>
 
-<aside class="notice">
-You must replace <code>meowmeowmeow</code> with your personal API key.
-</aside>
-<h1 id='kittens'>Kittens</h1><h2 id='get-all-kittens'>Get All Kittens</h2><div class="highlight"><pre class="highlight ruby tab-ruby"><code><span class="nb">require</span> <span class="s1">'kittn'</span>
+  <span class="c1">// Now, calculate the amount of baking soda necessary to close the remaining gap.</span>
+  <span class="kd">const</span> <span class="nx">bakingSodaTAMultiplier</span> <span class="o">=</span> <span class="p">.</span><span class="mi">000224</span><span class="p">;</span>
+  <span class="k">return</span> <span class="nx">p</span><span class="p">.</span><span class="nx">gallons</span> <span class="o">*</span> <span class="nx">taDelta</span> <span class="o">*</span> <span class="nx">bakingSodaTAMultiplier</span><span class="p">;</span>
 
-<span class="n">api</span> <span class="o">=</span> <span class="no">Kittn</span><span class="o">::</span><span class="no">APIClient</span><span class="p">.</span><span class="nf">authorize!</span><span class="p">(</span><span class="s1">'meowmeowmeow'</span><span class="p">)</span>
-<span class="n">api</span><span class="p">.</span><span class="nf">kittens</span><span class="p">.</span><span class="nf">get</span>
-</code></pre></div><div class="highlight"><pre class="highlight python tab-python"><code><span class="kn">import</span> <span class="nn">kittn</span>
-
-<span class="n">api</span> <span class="o">=</span> <span class="n">kittn</span><span class="p">.</span><span class="n">authorize</span><span class="p">(</span><span class="s">'meowmeowmeow'</span><span class="p">)</span>
-<span class="n">api</span><span class="p">.</span><span class="n">kittens</span><span class="p">.</span><span class="n">get</span><span class="p">()</span>
-</code></pre></div><div class="highlight"><pre class="highlight shell tab-shell"><code>curl <span class="s2">"http://example.com/api/kittens"</span> <span class="se">\</span>
-  <span class="nt">-H</span> <span class="s2">"Authorization: meowmeowmeow"</span>
-</code></pre></div><div class="highlight"><pre class="highlight javascript tab-javascript"><code><span class="kd">const</span> <span class="nx">kittn</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">kittn</span><span class="dl">'</span><span class="p">);</span>
-
-<span class="kd">let</span> <span class="nx">api</span> <span class="o">=</span> <span class="nx">kittn</span><span class="p">.</span><span class="nx">authorize</span><span class="p">(</span><span class="dl">'</span><span class="s1">meowmeowmeow</span><span class="dl">'</span><span class="p">);</span>
-<span class="kd">let</span> <span class="nx">kittens</span> <span class="o">=</span> <span class="nx">api</span><span class="p">.</span><span class="nx">kittens</span><span class="p">.</span><span class="kd">get</span><span class="p">();</span>
+  <span class="c1">// NOTE: this ignores some complications. For instance, this new dose of</span>
+  <span class="c1">// baking soda will also raise the pH, and could knock it above the ideal range.</span>
+  <span class="c1">// If anyone wants to remix this recipe to account for this, you would be a hero.</span>
+<span class="p">}</span>
 </code></pre></div>
 <blockquote>
-<p>The above command returns JSON structured like this:</p>
+<p>Finally, <a href="https://app.pooldash.com/formula/vast_argument_756/edit#t-lsi">here</a> is an example of a calculation-type treatment (for the LSI) that returns null if the necessary readings are skipped:</p>
 </blockquote>
-<div class="highlight"><pre class="highlight json tab-json"><code><span class="p">[</span><span class="w">
-  </span><span class="p">{</span><span class="w">
-    </span><span class="nl">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
-    </span><span class="nl">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Fluffums"</span><span class="p">,</span><span class="w">
-    </span><span class="nl">"breed"</span><span class="p">:</span><span class="w"> </span><span class="s2">"calico"</span><span class="p">,</span><span class="w">
-    </span><span class="nl">"fluffiness"</span><span class="p">:</span><span class="w"> </span><span class="mi">6</span><span class="p">,</span><span class="w">
-    </span><span class="nl">"cuteness"</span><span class="p">:</span><span class="w"> </span><span class="mi">7</span><span class="w">
-  </span><span class="p">},</span><span class="w">
-  </span><span class="p">{</span><span class="w">
-    </span><span class="nl">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w">
-    </span><span class="nl">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Max"</span><span class="p">,</span><span class="w">
-    </span><span class="nl">"breed"</span><span class="p">:</span><span class="w"> </span><span class="s2">"unknown"</span><span class="p">,</span><span class="w">
-    </span><span class="nl">"fluffiness"</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w">
-    </span><span class="nl">"cuteness"</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="w">
-  </span><span class="p">}</span><span class="w">
-</span><span class="p">]</span><span class="w">
-</span></code></pre></div>
-<p>This endpoint retrieves all kittens.</p>
-<h3 id='http-request'>HTTP Request</h3>
-<p><code>GET http://example.com/api/kittens</code></p>
-<h3 id='query-parameters'>Query Parameters</h3>
-<table><thead>
-<tr>
-<th>Parameter</th>
-<th>Default</th>
-<th>Description</th>
-</tr>
-</thead><tbody>
-<tr>
-<td>include_cats</td>
-<td>false</td>
-<td>If set to true, the result will also include cats.</td>
-</tr>
-<tr>
-<td>available</td>
-<td>true</td>
-<td>If set to false, the result will include kittens that have already been adopted.</td>
-</tr>
-</tbody></table>
+<div class="highlight"><pre class="highlight javascript tab-javascript"><code><span class="kd">function</span><span class="p">(</span><span class="nx">p</span><span class="p">,</span> <span class="nx">r</span><span class="p">,</span> <span class="nx">t</span><span class="p">,</span> <span class="nx">c</span><span class="p">,</span> <span class="nx">s</span><span class="p">)</span> <span class="p">{</span>
+  <span class="c1">// We need these 4 readings + temperature to calculate this:</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">s</span><span class="p">.</span><span class="nx">ch</span> <span class="o">||</span> <span class="nx">s</span><span class="p">.</span><span class="nx">ph</span> <span class="o">||</span> <span class="nx">s</span><span class="p">.</span><span class="nx">tds</span> <span class="o">||</span> <span class="nx">s</span><span class="p">.</span><span class="nx">ta</span> <span class="o">||</span> <span class="p">(</span><span class="nx">s</span><span class="p">.</span><span class="nx">temp_f</span> <span class="o">&amp;&amp;</span> <span class="nx">s</span><span class="p">.</span><span class="nx">temp_c</span><span class="p">))</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="kc">null</span><span class="p">;</span>
+  <span class="p">}</span>
 
-<aside class="success">
-Remember — a happy kitten is an authenticated kitten!
-</aside>
-<h2 id='get-a-specific-kitten'>Get a Specific Kitten</h2><div class="highlight"><pre class="highlight ruby tab-ruby"><code><span class="nb">require</span> <span class="s1">'kittn'</span>
+  <span class="c1">// Prefer the temp_f reading (if the user took both for some reason). But, either works:</span>
+  <span class="kd">const</span> <span class="nx">degrees_c</span> <span class="o">=</span> <span class="p">(</span><span class="nx">s</span><span class="p">.</span><span class="nx">temp_f</span><span class="p">)</span> <span class="p">?</span> <span class="nx">r</span><span class="p">.</span><span class="nx">temp_c</span> <span class="p">:</span> <span class="p">((</span><span class="nx">r</span><span class="p">.</span><span class="nx">temp_f</span> <span class="o">-</span> <span class="mi">32</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1.8</span><span class="p">);</span>
 
-<span class="n">api</span> <span class="o">=</span> <span class="no">Kittn</span><span class="o">::</span><span class="no">APIClient</span><span class="p">.</span><span class="nf">authorize!</span><span class="p">(</span><span class="s1">'meowmeowmeow'</span><span class="p">)</span>
-<span class="n">api</span><span class="p">.</span><span class="nf">kittens</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
-</code></pre></div><div class="highlight"><pre class="highlight python tab-python"><code><span class="kn">import</span> <span class="nn">kittn</span>
+  <span class="kd">const</span> <span class="nx">aa</span> <span class="o">=</span> <span class="p">(</span><span class="nb">Math</span><span class="p">.</span><span class="nx">log10</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">tds</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mf">10.0</span><span class="p">;</span>
+  <span class="kd">const</span> <span class="nx">bb</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="mf">13.12</span> <span class="o">*</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">log10</span><span class="p">(</span><span class="nx">degrees_c</span> <span class="o">+</span> <span class="mi">273</span><span class="p">))</span> <span class="o">+</span> <span class="mf">34.55</span><span class="p">;</span>
+  <span class="kd">const</span> <span class="nx">cc</span> <span class="o">=</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">log10</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">ch</span><span class="p">)</span> <span class="o">-</span> <span class="p">.</span><span class="mi">4</span><span class="p">;</span>
+  <span class="kd">const</span> <span class="nx">dd</span> <span class="o">=</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">log10</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">ta</span><span class="p">);</span>
 
-<span class="n">api</span> <span class="o">=</span> <span class="n">kittn</span><span class="p">.</span><span class="n">authorize</span><span class="p">(</span><span class="s">'meowmeowmeow'</span><span class="p">)</span>
-<span class="n">api</span><span class="p">.</span><span class="n">kittens</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
-</code></pre></div><div class="highlight"><pre class="highlight shell tab-shell"><code>curl <span class="s2">"http://example.com/api/kittens/2"</span> <span class="se">\</span>
-  <span class="nt">-H</span> <span class="s2">"Authorization: meowmeowmeow"</span>
-</code></pre></div><div class="highlight"><pre class="highlight javascript tab-javascript"><code><span class="kd">const</span> <span class="nx">kittn</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">kittn</span><span class="dl">'</span><span class="p">);</span>
-
-<span class="kd">let</span> <span class="nx">api</span> <span class="o">=</span> <span class="nx">kittn</span><span class="p">.</span><span class="nx">authorize</span><span class="p">(</span><span class="dl">'</span><span class="s1">meowmeowmeow</span><span class="dl">'</span><span class="p">);</span>
-<span class="kd">let</span> <span class="nx">max</span> <span class="o">=</span> <span class="nx">api</span><span class="p">.</span><span class="nx">kittens</span><span class="p">.</span><span class="kd">get</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span>
+  <span class="k">return</span> <span class="nx">r</span><span class="p">.</span><span class="nx">ph</span> <span class="o">-</span> <span class="mf">9.3</span> <span class="o">-</span> <span class="nx">aa</span> <span class="o">-</span> <span class="nx">bb</span> <span class="o">+</span> <span class="nx">cc</span> <span class="o">+</span> <span class="nx">dd</span><span class="p">;</span>
+<span class="p">}</span>
 </code></pre></div>
-<blockquote>
-<p>The above command returns JSON structured like this:</p>
-</blockquote>
-<div class="highlight"><pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
-  </span><span class="nl">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w">
-  </span><span class="nl">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Max"</span><span class="p">,</span><span class="w">
-  </span><span class="nl">"breed"</span><span class="p">:</span><span class="w"> </span><span class="s2">"unknown"</span><span class="p">,</span><span class="w">
-  </span><span class="nl">"fluffiness"</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w">
-  </span><span class="nl">"cuteness"</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="w">
-</span><span class="p">}</span><span class="w">
-</span></code></pre></div>
-<p>This endpoint retrieves a specific kitten.</p>
+<p>These are pure functions, so they should always return the same result given the same inputs. You shouldn&#39;t try to read from external data-sources, check the time, or use any other dependencies besides the explicit parameters.</p>
 
-<aside class="warning">Inside HTML code blocks like this one, you can't use Markdown, so use <code>&lt;code&gt;</code> blocks to denote code.</aside>
-<h3 id='http-request-2'>HTTP Request</h3>
-<p><code>GET http://example.com/kittens/&lt;ID&gt;</code></p>
-<h3 id='url-parameters'>URL Parameters</h3>
+<p>The inputs include context about the pool &amp; readings:</p>
+
 <table><thead>
 <tr>
 <th>Parameter</th>
@@ -690,49 +591,63 @@ Remember — a happy kitten is an authenticated kitten!
 </tr>
 </thead><tbody>
 <tr>
-<td>ID</td>
-<td>The ID of the kitten to retrieve</td>
+<td>p</td>
+<td>The pool object. It includes properties such as <code>gallons</code> (US Gallons), <code>liters</code>, and <code>wall_type</code>.</td>
+</tr>
+<tr>
+<td>r</td>
+<td>The readings object. It will have all of the formula readings, keyed by their &quot;Var Name&quot; property.</td>
+</tr>
+<tr>
+<td>t</td>
+<td>The treatments object. It provides the results of all previous treatments, keyed by their &quot;Var Name&quot; property. This is included as a convenience.</td>
+</tr>
+<tr>
+<td>c</td>
+<td>The customizable target ranges object. It contains a range object (with <code>min</code> and <code>max</code>) for each target range, keyed by the target range&#39;s &quot;Var Name&quot; property.</td>
+</tr>
+<tr>
+<td>s</td>
+<td>The skipped readings object. <code>s.&lt;var&gt;</code> will resolve to &quot;true&quot; for all skipped readings, and &quot;false&quot; for all readings the user took.</td>
 </tr>
 </tbody></table>
-<h2 id='delete-a-specific-kitten'>Delete a Specific Kitten</h2><div class="highlight"><pre class="highlight ruby tab-ruby"><code><span class="nb">require</span> <span class="s1">'kittn'</span>
 
-<span class="n">api</span> <span class="o">=</span> <span class="no">Kittn</span><span class="o">::</span><span class="no">APIClient</span><span class="p">.</span><span class="nf">authorize!</span><span class="p">(</span><span class="s1">'meowmeowmeow'</span><span class="p">)</span>
-<span class="n">api</span><span class="p">.</span><span class="nf">kittens</span><span class="p">.</span><span class="nf">delete</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
-</code></pre></div><div class="highlight"><pre class="highlight python tab-python"><code><span class="kn">import</span> <span class="nn">kittn</span>
+<p>As a convenience, all available inputs are listed for each function at the bottom of the formula editor:</p>
 
-<span class="n">api</span> <span class="o">=</span> <span class="n">kittn</span><span class="p">.</span><span class="n">authorize</span><span class="p">(</span><span class="s">'meowmeowmeow'</span><span class="p">)</span>
-<span class="n">api</span><span class="p">.</span><span class="n">kittens</span><span class="p">.</span><span class="n">delete</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
-</code></pre></div><div class="highlight"><pre class="highlight shell tab-shell"><code>curl <span class="s2">"http://example.com/api/kittens/2"</span> <span class="se">\</span>
-  <span class="nt">-X</span> DELETE <span class="se">\</span>
-  <span class="nt">-H</span> <span class="s2">"Authorization: meowmeowmeow"</span>
-</code></pre></div><div class="highlight"><pre class="highlight javascript tab-javascript"><code><span class="kd">const</span> <span class="nx">kittn</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="dl">'</span><span class="s1">kittn</span><span class="dl">'</span><span class="p">);</span>
+<p><img src="images/function_editor-d4849faa.jpg" alt="An IDE with a textbox to edit a function on top, and seeral columns of text below, listing properties like 'r.tc: number'" /></p>
 
-<span class="kd">let</span> <span class="nx">api</span> <span class="o">=</span> <span class="nx">kittn</span><span class="p">.</span><span class="nx">authorize</span><span class="p">(</span><span class="dl">'</span><span class="s1">meowmeowmeow</span><span class="dl">'</span><span class="p">);</span>
-<span class="kd">let</span> <span class="nx">max</span> <span class="o">=</span> <span class="nx">api</span><span class="p">.</span><span class="nx">kittens</span><span class="p">.</span><span class="k">delete</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span>
-</code></pre></div>
-<blockquote>
-<p>The above command returns JSON structured like this:</p>
-</blockquote>
-<div class="highlight"><pre class="highlight json tab-json"><code><span class="p">{</span><span class="w">
-  </span><span class="nl">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w">
-  </span><span class="nl">"deleted"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">":("</span><span class="w">
-</span><span class="p">}</span><span class="w">
-</span></code></pre></div>
-<p>This endpoint deletes a specific kitten.</p>
-<h3 id='http-request-3'>HTTP Request</h3>
-<p><code>DELETE http://example.com/kittens/&lt;ID&gt;</code></p>
-<h3 id='url-parameters-2'>URL Parameters</h3>
+<p>The return-value of the function is interpreted differently based on the &quot;Type&quot; selected:</p>
+
 <table><thead>
 <tr>
-<th>Parameter</th>
-<th>Description</th>
+<th>Type</th>
+<th>Return-value</th>
 </tr>
 </thead><tbody>
 <tr>
-<td>ID</td>
-<td>The ID of the kitten to delete</td>
+<td>dryChemical</td>
+<td>The number of US Ounces (by weight) of this chemical to use. If none is required, return 0. The user can convert this value to other units at runtime, including metric, imperial, US, and even custom scoops... but this function must return US ounces.</td>
+</tr>
+<tr>
+<td>liquidChemical</td>
+<td>Same as dryChemical, but the value should be US Ounces by volume.</td>
+</tr>
+<tr>
+<td>task</td>
+<td>Return 1 if the task should be completed, and 0 otherwise.</td>
+</tr>
+<tr>
+<td>calculation</td>
+<td>Return <code>null</code> if the calculation cannot be performed, otherwise return a number indicating the result. Remember that <code>0</code> is recorded as a valid result.</td>
 </tr>
 </tbody></table>
+<h2 id='considerations'>Considerations</h2>
+<ul>
+<li>If you remix a formula, post in the <a href="https://forum.pooldash.com">forum</a> and tell us about it! It&#39;s more fun that way.</li>
+<li>When choosing a &quot;Var Name&quot; for readings, treatments, and target levels, you can technically pick anything you want. However, there are advantages to following the same standards as everyone else. For example, the charts will track chemical history over time based on the &quot;Var Name&quot;, so even if a user changes formulas, the chart will remain unified over time:</li>
+</ul>
+
+<p><img src="images/charts-cb4276bf.jpg" alt="2 charts, one for Total Alkalinity and another for Sodium Bicarbonate, showing 3 months of history." width="350" /></p>
 
       </div>
       <div class="dark-box">
